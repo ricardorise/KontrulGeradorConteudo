@@ -201,5 +201,6 @@ export interface RenderAsset {
   has_audio: boolean
   audio_silent: boolean
   mean_volume_db: number | null
+  available: boolean // o arquivo existe neste ambiente (o banco é compartilhado, os arquivos não)
   created_at: string
 }

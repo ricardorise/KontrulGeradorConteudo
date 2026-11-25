@@ -21,6 +21,9 @@ class LocalMediaStore:
     def result_path(self, job_id: UUID) -> Path:
         return self._root / "renders" / f"{job_id}.mp4"
 
+    def has_asset(self, stored_name: str) -> bool:
+        return self.asset_path(stored_name).is_file()
+
     def relative(self, path: Path) -> str:
         return path.resolve().relative_to(self._root).as_posix()
 

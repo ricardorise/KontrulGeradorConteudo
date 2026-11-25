@@ -37,7 +37,7 @@ export function VignettePicker({ kind, selectedId, onSelect, volume, onVolume }:
         if (cancelled) return
         setAssets(list)
         // a escolha lembrada só vale se o arquivo ainda existe
-        if (selectedId && !list.some((a) => a.id === selectedId)) onSelect(null)
+        if (selectedId && !list.some((a) => a.id === selectedId && a.available)) onSelect(null)
       })
       .catch((e) => !cancelled && setError(e instanceof Error ? e.message : 'Falha ao listar'))
     return () => {
@@ -77,7 +77,8 @@ export function VignettePicker({ kind, selectedId, onSelect, volume, onVolume }:
         <select aria-label={title} value={selectedId ?? ''} onChange={(e) => onSelect(assets.find((a) => a.id === e.target.value) ?? null)}>
           <option value="">{kind === 'music' ? 'Sem áudio de fundo' : kind === 'background' ? 'Usar o caminho do servidor' : 'Sem vinheta'}</option>
           {assets.map((a) => (
-            <option key={a.id} value={a.id}>
+            <option key={a.id} value={a.id} disabled={!a.available}>
+              {!a.available && '⚠ '}
               {a.filename} · {formatSeconds(a.duration)}
               {a.width ? ` · ${a.width}×${a.height}` : ''}
             </option>
@@ -124,6 +125,11 @@ export function VignettePicker({ kind, selectedId, onSelect, volume, onVolume }:
             onChange={onVolume}
           />
         </details>
+      )}
+      {assets.some((a) => !a.available) && (
+        <p className="muted">
+          ⚠ Itens marcados não têm o arquivo neste ambiente (foram enviados em outro lugar): apague e envie de novo.
+        </p>
       )}
       {error && <p className="error">{error}</p>}
     </fieldset>

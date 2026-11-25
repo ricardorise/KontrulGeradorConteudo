@@ -85,7 +85,7 @@ async def upload_asset(uc: UC, kind: str = Form(...), file: UploadFile = File(..
 
 @router.get("/render-assets", response_model=list[RenderAssetOut])
 async def list_assets(uc: UC, kind: str | None = None) -> list[RenderAssetOut]:
-    return [RenderAssetOut.of(a) for a in await uc.list_render_assets(kind)]
+    return [RenderAssetOut.of(a, ok) for a, ok in await uc.list_render_assets(kind)]
 
 
 @router.delete("/render-assets/{asset_id}", status_code=204)

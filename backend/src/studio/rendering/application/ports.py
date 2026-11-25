@@ -88,6 +88,10 @@ class MediaStore(Protocol):
 
     def asset_path(self, stored_name: str) -> Path: ...
 
+    def has_asset(self, stored_name: str) -> bool:
+        """O arquivo existe neste ambiente? (o banco é compartilhado, os arquivos não)"""
+        ...
+
     def result_path(self, job_id: UUID) -> Path: ...
 
     def relative(self, path: Path) -> str:

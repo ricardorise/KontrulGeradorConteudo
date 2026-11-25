@@ -127,7 +127,7 @@ def create_app() -> FastAPI:
             preview_render=preview_render,
             start_render=StartRender(render_repo, preview_render, renderer, runner, render_monitor, asset_repo, media_store),
             upload_render_asset=UploadRenderAsset(asset_repo, media_store, probe, settings.max_upload_mb * 1024 * 1024),
-            list_render_assets=ListRenderAssets(asset_repo),
+            list_render_assets=ListRenderAssets(asset_repo, media_store),
             delete_render_asset=DeleteRenderAsset(asset_repo, media_store),
             remix_render=RemixRender(render_repo, asset_repo, runner, finisher),
             get_render=GetRender(render_repo),

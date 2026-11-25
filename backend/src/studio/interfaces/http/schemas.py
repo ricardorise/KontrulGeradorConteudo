@@ -338,12 +338,13 @@ class RenderAssetOut(BaseModel):
     has_audio: bool
     audio_silent: bool
     mean_volume_db: float | None
+    available: bool  # o arquivo existe neste ambiente
     created_at: datetime
 
     @classmethod
-    def of(cls, a: RenderAsset) -> "RenderAssetOut":
+    def of(cls, a: RenderAsset, available: bool = True) -> "RenderAssetOut":
         return cls(
             id=a.id, kind=a.kind.value, filename=a.filename, size_bytes=a.size_bytes, duration=a.duration,
             width=a.width, height=a.height, has_audio=a.has_audio, audio_silent=a.audio_silent,
-            mean_volume_db=a.mean_volume_db, created_at=a.created_at,
+            mean_volume_db=a.mean_volume_db, available=available, created_at=a.created_at,
         )  # fmt: skip

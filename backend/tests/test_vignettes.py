@@ -751,3 +751,23 @@ def test_media_store_paths_are_relative_and_legacy_absolute_paths_still_resolve(
     assert store.resolve(legacy) == store.result_path(job)
     assert store.resolve("../../etc/passwd").is_relative_to(tmp_path.resolve())  # não escapa da pasta de mídia
     assert store.resolve("/etc/passwd").is_relative_to(tmp_path.resolve())
+
+
+async def test_missing_media_file_gives_clear_error_and_is_flagged_in_listing(tmp_path):
+    from studio.rendering.application.use_cases import ListRenderAssets
+
+    store, assets = LocalMediaStore(tmp_path), MemoryAssets()
+    intro = await UploadRenderAsset(assets, store, FakeProbe(GOOD), 10**7)("intro", "Intro.mp4", one(b"i"))
+    other = await UploadRenderAsset(assets, store, FakeProbe(GOOD), 10**7)("intro", "Outra.mp4", one(b"o"))
+    store.asset_path(intro.stored_name).unlink()  # o arquivo foi enviado em outro ambiente e não está aqui
+
+    listed = {a.filename: ok for a, ok in await ListRenderAssets(assets, store)("intro")}
+    assert listed == {"Intro.mp4": False, "Outra.mp4": True}
+
+    renderer = StreamRenderer([RenderProgress("running")])
+    repo, runner = MemoryRenderRepo(), InlineRunner()
+    start = StartRender(repo, PreviewRender(Source(script(cut(1, "Abertura do vídeo"))), renderer), renderer, runner,
+                        RenderMonitor(repo, renderer, 0), assets, store)
+    with pytest.raises(InvalidInput, match="Intro.mp4.*não está neste ambiente"):
+        await start(uuid4(), None, intro.id)
+    await start(uuid4(), None, other.id)  # a que existe segue normalmente

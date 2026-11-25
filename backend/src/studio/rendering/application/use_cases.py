@@ -139,6 +139,11 @@ class StartRender:
         asset = await self._assets.get(asset_id) if self._assets else None
         if asset is None or asset.kind is not kind:
             raise InvalidInput(f"Vinheta de {kind.value} não encontrada. Envie o vídeo novamente.")
+        if self._store and not self._store.has_asset(asset.stored_name):
+            raise InvalidInput(
+                f"O arquivo “{asset.filename}” ({kind.value}) não está neste ambiente (foi enviado em outro lugar). "
+                "Apague-o e envie de novo."
+            )
         return asset
 
     async def __call__(
@@ -300,6 +305,8 @@ class RenderFinisher:
         asset = await self._assets.get(asset_id)
         if asset is None:
             raise MediaError("a vinheta escolhida foi apagada")
+        if not self._store.has_asset(asset.stored_name):
+            raise MediaError(f"o arquivo “{asset.filename}” não está neste ambiente")
         return self._store.asset_path(asset.stored_name)
 
 
@@ -409,14 +416,16 @@ class UploadRenderAsset:
 
 
 class ListRenderAssets:
-    def __init__(self, assets: RenderAssetRepository):
-        self._assets = assets
+    def __init__(self, assets: RenderAssetRepository, store: MediaStore | None = None):
+        self._assets, self._store = assets, store
 
-    async def __call__(self, kind: str | None = None) -> list[RenderAsset]:
+    async def __call__(self, kind: str | None = None) -> list[tuple[RenderAsset, bool]]:
+        """Mídias e se o arquivo existe neste ambiente."""
         try:
-            return await self._assets.list(AssetKind(kind) if kind else None)
+            found = await self._assets.list(AssetKind(kind) if kind else None)
         except ValueError:
             raise InvalidInput("Tipo de vinheta inválido.") from None
+        return [(a, self._store.has_asset(a.stored_name) if self._store else True) for a in found]
 
 
 class DeleteRenderAsset:

@@ -24,7 +24,7 @@ const job = (over: Partial<Render> = {}): Render => ({
 })
 const asset = (over: Partial<RenderAsset> = {}): RenderAsset => ({
   id: 'a1', kind: 'intro', filename: 'Intro.mp4', size_bytes: 23_000_000, duration: 6, width: 1920, height: 1080,
-  has_audio: true, audio_silent: false, mean_volume_db: -20, created_at: '', ...over,
+  has_audio: true, audio_silent: false, mean_volume_db: -20, available: true, created_at: '', ...over,
 })
 
 beforeEach(() => {
@@ -277,4 +277,18 @@ test('sem vinhetas só existe o nível da fala', async () => {
   await screen.findByLabelText('Áudio de fundo na fala')
   expect(screen.queryByLabelText('Áudio de fundo na abertura')).not.toBeInTheDocument()
   expect(screen.queryByLabelText('Áudio de fundo no final')).not.toBeInTheDocument()
+})
+
+
+test('mídia sem arquivo neste ambiente aparece desativada e a escolha lembrada é descartada', async () => {
+  const gone = asset({ available: false })
+  vi.mocked(api.renderPreview).mockResolvedValue(preview())
+  vi.mocked(api.listRenders).mockResolvedValue([])
+  vi.mocked(api.listRenderAssets).mockImplementation(async (kind) => (kind === 'intro' ? [gone] : []))
+  localStorage.setItem('vignette:intro', 'a1')
+  render(<RenderDialog scriptId="s1" onClose={() => {}} />)
+  const option = await screen.findByRole('option', { name: /⚠.*Intro\.mp4/ })
+  expect(option).toBeDisabled()
+  expect(screen.getByText(/não têm o arquivo neste ambiente/)).toBeInTheDocument()
+  await waitFor(() => expect(localStorage.getItem('vignette:intro')).toBeNull())
 })
