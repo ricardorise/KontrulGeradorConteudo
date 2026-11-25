@@ -1,0 +1,19 @@
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    client_max_body_size 2g;  # uploads de vinhetas, trilha e background
+
+    location /api/ {
+        proxy_pass http://studio-api:8100;
+        proxy_set_header X-API-Key "${STUDIO_API_KEY}";
+        proxy_set_header Host $host;
+        proxy_read_timeout 600s;
+        proxy_request_buffering off;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}

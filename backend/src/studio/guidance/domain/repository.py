@@ -1,0 +1,19 @@
+from typing import Protocol
+from uuid import UUID
+
+from studio.guidance.domain.guideline import Guideline
+from studio.shared.domain.guidance import GuidelineScope
+
+
+class GuidelineRepository(Protocol):
+    async def add(self, guideline: Guideline) -> None: ...
+
+    async def get(self, guideline_id: UUID) -> Guideline | None: ...
+
+    async def set_active(self, guideline_id: UUID, active: bool) -> None: ...
+
+    async def delete(self, guideline_id: UUID) -> None: ...
+
+    async def list_all(self) -> list[Guideline]: ...
+
+    async def find_duplicate(self, scope: GuidelineScope, text: str) -> Guideline | None: ...

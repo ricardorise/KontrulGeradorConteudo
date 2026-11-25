@@ -1,0 +1,38 @@
+ÁUDIO DO VÍDEO DE BACKGROUND — IMPLEMENTAÇÃO E ROLLBACK
+
+Entrada do PapoRender: volume_fundo, FLOAT opcional, padrão 0.0, intervalo 0..1.5, passo 0.01.
+O som do background é um input em loop independente dos B-rolls. A mixagem mantém os parâmetros de loudnorm da voz, volume_trilha e amix duration=first:normalize=0. No novo ramo, os timestamps da voz são reiniciados após loudnorm para preservar a duração integral da mixagem.
+Zero mantém todos os comandos FFmpeg da versão anterior, verificado por comparação com fixtures/render_before_background.py.
+Background sem áudio é ignorado com aviso. B-rolls continuam sem áudio.
+
+Validação no servidor:
+59 testes de unidade passaram.
+Smoke CPU: /tmp/papotech-background-smoke-t7zc2qpq/
+Silêncio sintético para isolar o fundo: volume_fundo=0 => -91.0 dB; volume_fundo=0.5 => -27.3 dB.
+Durante B-roll: -27.1 dB. Após loop: -27.3 dB. Background sem áudio: -91.0 dB.
+Mixagem voz+trilha+background: -27.1 dB no teste com voz silenciosa.
+Voz audível: mix sem fundo -15.8 dB; mix com fundo -15.5 dB; banda da voz em ambos -15.8 dB.
+O tom do áudio do B-roll não foi incluído (banda 1800 Hz: -69.5 dB, apenas vazamento residual do teste).
+Nenhuma geração ElevenLabs/WhisperX/GPU ou execução completa do workflow foi iniciada.
+
+Workflow visual salvo por /userdata/workflows%2Fvideos%20do%20papotechcast.json, volume_fundo=0.
+Contrato /object_info/PapoRender validado, incluindo limites/passo/default e entrada optional.
+Conversor backend/scripts/convert_workflow.py validado com o formato visual novo e com o legado.
+
+BACKUPS NO SERVIDOR RISES:
+/mnt/build/projects/ComfyUI/custom_nodes/papotechcast/pipeline.py.bak-20261124T235803Z
+/mnt/build/projects/ComfyUI/custom_nodes/papotechcast/__init__.py.bak-20261124T235803Z
+/mnt/build/projects/ComfyUI/custom_nodes/papotechcast/web/papotechcast.js.bak-20261124T235803Z
+/mnt/build/projects/ComfyUI/user/default/papotechcast-backups/before-background-audio-20261125T000312Z.json
+
+ROLLBACK (execute no servidor como rises):
+1. Confira http://127.0.0.1:8188/queue. Só prossiga com queue_running e queue_pending vazios.
+2. Restaure:
+cp /mnt/build/projects/ComfyUI/custom_nodes/papotechcast/pipeline.py.bak-20261124T235803Z /mnt/build/projects/ComfyUI/custom_nodes/papotechcast/pipeline.py
+cp /mnt/build/projects/ComfyUI/custom_nodes/papotechcast/__init__.py.bak-20261124T235803Z /mnt/build/projects/ComfyUI/custom_nodes/papotechcast/__init__.py
+cp /mnt/build/projects/ComfyUI/custom_nodes/papotechcast/web/papotechcast.js.bak-20261124T235803Z /mnt/build/projects/ComfyUI/custom_nodes/papotechcast/web/papotechcast.js
+3. Restaure o workflow visual (o JSON de backup corresponde ao momento anterior à inclusão do campo):
+curl --fail -X POST -H 'Content-Type: application/json' --data-binary @/mnt/build/projects/ComfyUI/user/default/papotechcast-backups/before-background-audio-20261125T000312Z.json 'http://127.0.0.1:8188/userdata/workflows%2Fvideos%20do%20papotechcast.json'
+4. Ainda com fila vazia:
+systemctl --user restart comfyui.service
+5. Confirme HTTP 200 e recarregue a página do ComfyUI.

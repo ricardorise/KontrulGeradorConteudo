@@ -1,0 +1,136 @@
+{
+  "1": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "Olá! Seja bem-vindo ao PapoTechCast, o nosso espaço para conversar sobre tecnologia de um jeito simples, direto e próximo da vida real.\n\nHoje, a pergunta é: como a inteligência artificial pode ajudar na criação de conteúdo?\n\nImagine transformar uma ideia em roteiro, gerar uma narração e organizar imagens para contar uma história. Essas etapas já podem fazer parte de um fluxo automatizado.\n\nMas existe uma diferença entre produzir mais rápido e produzir melhor. A tecnologia acelera tarefas. A intenção, o contexto e a escolha do que merece ser dito continuam com a gente.\n\nAgora, uma pausa rápida para conhecer quem apoia esse projeto. São essas parcerias que ajudam o PapoTechCast a continuar experimentando ferramentas e compartilhando descobertas com você.\n\nE voltando ao nosso assunto: um bom vídeo começa com uma mensagem clara. Antes de escolher efeitos, vozes ou transições, vale perguntar: o que eu quero que a pessoa entenda ao assistir?\n\nDepois, cada recurso entra para reforçar essa mensagem. Uma imagem mostra um exemplo. Uma pausa dá espaço para pensar. Um corte acompanha a mudança de assunto.\n\nAutomatizar pode abrir espaço para cuidar melhor dessas escolhas.\n\nSe você gosta de acompanhar essas experiências, siga o PapoTechCast e participe da conversa. Conte pra gente: qual tarefa você gostaria de automatizar primeiro?\n\nObrigado pela companhia. Até o próximo episódio!"
+    },
+    "_meta": {
+      "title": "01 • Roteiro"
+    }
+  },
+  "2": {
+    "class_type": "PapoAssets",
+    "inputs": {
+      "brolls_timeline": [
+        "9",
+        0
+      ],
+      "background": "papotechcast/Background2.mp4",
+      "brolls": "papotechcast/Intro.mp4\npapotechcast/publicidade.mp4\npapotechcast/Saida.mp4\nhttps://www.youtube.com/watch?v=kwJ15olZCfI#t=326,350",
+      "trilha": "",
+      "referencia_voz": ""
+    },
+    "_meta": {
+      "title": "02 • Envie os arquivos"
+    }
+  },
+  "3": {
+    "class_type": "PapoNarration",
+    "inputs": {
+      "roteiro": [
+        "1",
+        0
+      ],
+      "arquivos": [
+        "2",
+        0
+      ],
+      "voz_salva": "Ricardo",
+      "descricao_voz": "male, middle-aged, moderate pitch",
+      "transcricao_referencia": "",
+      "idioma": "Portuguese",
+      "seed": 42,
+      "provedor": "ElevenLabs",
+      "voz_elevenlabs": "Rafael PapotechCast High",
+      "modelo_elevenlabs": "eleven_multilingual_v2",
+      "estabilidade_elevenlabs": 0.3,
+      "similaridade_elevenlabs": 0.73,
+      "velocidade_elevenlabs": 1.08,
+      "estilo_elevenlabs": 0.66,
+      "idioma_elevenlabs": "pt"
+    },
+    "_meta": {
+      "title": "03 • Gerar narração — VoiceStudio / ElevenLabs"
+    }
+  },
+  "4": {
+    "class_type": "PapoCaptions",
+    "inputs": {
+      "narracao": [
+        "3",
+        0
+      ],
+      "ativar": false
+    },
+    "_meta": {
+      "title": "04 • Transcrever e legendar"
+    }
+  },
+  "5": {
+    "class_type": "PapoRender",
+    "inputs": {
+      "arquivos": [
+        "2",
+        0
+      ],
+      "narracao": [
+        "3",
+        0
+      ],
+      "legendas_srt": [
+        "4",
+        0
+      ],
+      "formato": "YouTube 720p",
+      "intervalo_broll": 10,
+      "duracao_broll": 4,
+      "volume_trilha": 0.08,
+      "volume_fundo": 0.0
+    },
+    "_meta": {
+      "title": "05 • Alinhar B-rolls e renderizar MP4"
+    }
+  },
+  "6": {
+    "class_type": "PapoYouTube",
+    "inputs": {
+      "video_mp4": [
+        "5",
+        0
+      ],
+      "titulo": "PapoTechCast — teste de montagem automática",
+      "descricao": "Teste com narração Ricardo, background, B-rolls locais e recorte do YouTube.",
+      "tags": "papotechcast,tecnologia,podcast",
+      "privacidade": "private",
+      "conteudo_infantil": false,
+      "midia_sintetica": true,
+      "acao": "Preparar pacote (sem envio)"
+    },
+    "_meta": {
+      "title": "06 • Prévia, download e YouTube"
+    }
+  },
+  "8": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "Intro.mp4 | 00:00 | 6\npublicidade.mp4 | 00:20 | 8\nhttps://www.youtube.com/watch?v=kwJ15olZCfI#t=326,350 | Automatizar pode abrir espaço para cuidar melhor dessas escolhas | 10\nSaida.mp4 | 01:30 | 5"
+    },
+    "_meta": {
+      "title": "B-rolls • caminho | horário ou frase:trecho | duração opcional"
+    }
+  },
+  "9": {
+    "class_type": "PapoYouTubeBrolls",
+    "inputs": {
+      "brolls_locais": [
+        "8",
+        0
+      ],
+      "lista_youtube": "",
+      "resolucao": "1080p"
+    },
+    "_meta": {
+      "title": "YouTube • URL | início | fim | entrada no vídeo"
+    }
+  }
+}

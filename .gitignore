@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.env
+data/
+
+# export do workflow em andamento (fora do projeto)
+YoutubeGenerator.json

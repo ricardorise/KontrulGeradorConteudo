@@ -1,0 +1,34 @@
+# Gerador de Conteúdo Kontrul. Rode no servidor `rises`: docker compose up -d --build
+services:
+  studio-api:
+    build: ./backend
+    user: "1000:1000" # a chave SSH (0600) pertence ao uid 1000, como no kontrul-api
+    restart: unless-stopped
+    environment:
+      STUDIO_DATABASE_URL: postgresql://sofia:${STUDIO_DB_PASSWORD:?defina STUDIO_DB_PASSWORD no .env}@postgres:5432/sofia
+      STUDIO_HERMES_SSH: ${STUDIO_HERMES_SSH:-rises@10.241.168.46}
+      STUDIO_HERMES_SSH_KEY: /run/ssh/id_ed25519
+      STUDIO_HERMES_CONTAINER: hermes
+      STUDIO_COMFY_URL: ${STUDIO_COMFY_URL:-http://10.241.168.46:8188}
+      STUDIO_API_KEY: ${STUDIO_API_KEY:-}
+    volumes:
+      - /home/rises/projects/kontrul/secrets/ssh:/run/ssh:ro
+      - studio-media:/data/media  # vinhetas enviadas e vídeos montados
+    networks: [kontrul_core]
+
+  studio-web:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on: [studio-api]
+    environment:
+      STUDIO_API_KEY: ${STUDIO_API_KEY:-}
+    ports:
+      - "${STUDIO_WEB_BIND:-127.0.0.1}:${STUDIO_WEB_PORT:-8795}:80"
+    networks: [kontrul_core]
+
+volumes:
+  studio-media:
+
+networks:
+  kontrul_core:
+    external: true
