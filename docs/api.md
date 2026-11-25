@@ -40,6 +40,13 @@ Base: `/api`. Documentação interativa gerada pelo FastAPI em `/docs` (Swagger)
 | `GET /scripts/{id}/renders?limit=` | Envios do roteiro (mais recentes primeiro) |
 | `GET /renders/{id}` | Estado: `status, stage (comfyui/composing/done), queued, error, has_video, can_remix, music_baked, …` |
 | `POST /renders/{id}/remix` | Refaz só a montagem final. Corpo: `{intro_asset_id?, outro_asset_id?, music_asset_id?, music_volume?, music_intro_volume?, music_outro_volume?, intro_volume?, outro_volume?, normalize_vignettes?}` |
+| `POST /renders/{id}/publication` | Prepara a publicação (202): Jules Verne escreve a descrição, Youtoba título/tags. Idempotente; corpo opcional `{force}` cria novo rascunho |
+| `GET /renders/{id}/publication` | Última publicação do vídeo (ou `null`) |
+| `GET /publications/{id}` | Resumo: `status (drafting/ready/publishing/published/failed), title, title_alternatives, description, tags, links, full_description, privacy, problems, can_publish, video_url, error, error_stage` |
+| `PATCH /publications/{id}` | Edição manual atômica: `{title?, description?, tags?, links?, privacy? (private/unlisted), notify_subscribers?}` |
+| `POST /publications/{id}/revise` | `{target: title/description/tags/all, instructions}` (202) |
+| `POST /publications/{id}/regenerate` | Gera tudo de novo (202) |
+| `POST /publications/{id}/publish` | Envia ao YouTube (202). Exige `{confirm: true}`; sem isso, `422` |
 | `GET /renders/{id}/video[?download=true]` | O MP4 (arquivo local com suporte a `Range`, ou repasse do ComfyUI) |
 
 Níveis: trilha `0–1`; volumes de vinhetas e background `0–1,5`.

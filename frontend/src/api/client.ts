@@ -1,5 +1,5 @@
 import { apiUrl } from './base'
-import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
+import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Publication, PublicationEdit, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
 
 export class ApiError extends Error {}
 
@@ -130,6 +130,16 @@ export const api = {
   },
   listRenders: (scriptId: string) => request<Render[]>(`/scripts/${scriptId}/renders?limit=5`),
   getRender: (id: string) => request<Render>(`/renders/${id}`),
+
+  preparePublication: (renderId: string, force = false) => post<Publication>(`/renders/${renderId}/publication`, { force }),
+  getPublication: (id: string) => request<Publication>(`/publications/${id}`),
+  getPublicationForRender: (renderId: string) => request<Publication | null>(`/renders/${renderId}/publication`),
+  editPublication: (id: string, edit: PublicationEdit) =>
+    request<Publication>(`/publications/${id}`, { method: 'PATCH', body: JSON.stringify(edit) }),
+  revisePublication: (id: string, target: 'title' | 'description' | 'tags' | 'all', instructions: string) =>
+    post<Publication>(`/publications/${id}/revise`, { target, instructions }),
+  regeneratePublication: (id: string) => post<Publication>(`/publications/${id}/regenerate`),
+  publishPublication: (id: string) => post<Publication>(`/publications/${id}/publish`, { confirm: true }),
 
   listGuidelines: () => request<Guideline[]>('/guidelines'),
   addGuideline: (scope: GuidelineScope, text: string) => post<Guideline>('/guidelines', { scope, text }),

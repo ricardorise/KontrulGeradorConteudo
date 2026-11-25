@@ -8,6 +8,15 @@ from studio.conversation.application.use_cases import (
 )
 from studio.guidance.application.use_cases import AddGuideline, DeleteGuideline, ListGuidelines, SetGuidelineActive
 from studio.discovery.application.use_cases import GetNewsSearch, ListNewsSearches, StartNewsSearch
+from studio.publishing.application.use_cases import (
+    EditPublication,
+    GetPublication,
+    GetPublicationForRender,
+    PreparePublication,
+    PublishToYoutube,
+    RegeneratePublication,
+    RevisePublication,
+)
 from studio.rendering.application.use_cases import (
     DeleteRenderAsset,
     GetRender,
@@ -62,6 +71,13 @@ class UseCases:
     get_render: GetRender
     list_renders: ListRenders
     open_render_video: OpenRenderVideo
+    prepare_publication: PreparePublication
+    get_publication: GetPublication
+    get_publication_for_render: GetPublicationForRender
+    edit_publication: EditPublication
+    revise_publication: RevisePublication
+    regenerate_publication: RegeneratePublication
+    publish_publication: PublishToYoutube
     upload_render_asset: UploadRenderAsset
     list_render_assets: ListRenderAssets
     delete_render_asset: DeleteRenderAsset

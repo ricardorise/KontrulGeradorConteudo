@@ -15,7 +15,7 @@ STUDIO_DATABASE_URL=postgresql://usuario:senha@host:5432/banco .venv/bin/python 
 ```
 É idempotente (rodar de novo diz "Banco já está atualizado") e usa um *advisory lock*, então réplicas simultâneas não se atropelam. O usuário do banco precisa poder criar schema e tabelas.
 
-Verificado: aplicar todas as migrações num banco vazio gera as 13 tabelas abaixo, idênticas às de produção.
+Verificado: aplicar todas as migrações num banco vazio gera as 14 tabelas abaixo, idênticas às de produção.
 
 > Nota: há migrações com o mesmo prefixo numérico (`003_*`, `004_*`, `005_*`) porque foram criadas em paralelo. Elas são independentes e a ordem alfabética as aplica corretamente; use nomes únicos nas próximas.
 
@@ -37,6 +37,7 @@ Verificado: aplicar todas as migrações num banco vazio gera as 13 tabelas abai
 | `010_asset_loudness` | Nível médio do áudio (detecta faixa muda) |
 | `011_music_stage_volumes` | Nível do áudio de fundo por etapa |
 | `012_broll_source` | Origem de cada sugestão de B-roll (`lumiere` ou `manual`) |
+| `013_publications` | Rascunhos e publicações no YouTube |
 
 ## Tabelas (`content_studio`)
 
@@ -51,6 +52,7 @@ erDiagram
     paragraph_excerpts ||--o| script_cuts : "âncora (FK única)"
     scripts ||--o{ renders : "envios ao ComfyUI"
     render_assets ||--o{ renders : "abertura/final/trilha/background"
+    renders ||--o{ publications : "publicação no YouTube"
     conversations ||--o{ messages : tem
 ```
 
@@ -65,6 +67,7 @@ erDiagram
 | `paragraph_excerpts` | Trecho (offsets e texto) do parágrafo ligado a um corte; único por corte |
 | `render_assets` | Uploads: tipo (`intro/outro/music/background`), arquivo, duração, resolução, áudio, nível dB |
 | `renders` | Cada envio: estado, `prompt_id`, lista de edição, saída, volumes por parte, `final_path`, `main_path` |
+| `publications` | Rascunho/publicação: estado, título e alternativas, descrição, tags, links (`jsonb`), visibilidade (`private`/`unlisted`), erro e etapa do erro, `video_id`/`video_url` |
 | `guidelines` | Orientações: escopo, texto, ativa, origem (manual/chat) |
 | `conversations`, `messages` | Chat por bot; mensagens com estado e `actions` (jsonb) |
 | `schema_migrations` | Migrações aplicadas |

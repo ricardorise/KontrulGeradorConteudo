@@ -6,6 +6,7 @@ import { GuidelinesPanel } from './features/guidance/GuidelinesPanel'
 import { NewsList } from './features/news/NewsList'
 import { SearchBar } from './features/news/SearchBar'
 import { SearchHistory } from './features/news/SearchHistory'
+import { PublicationView } from './features/publication/PublicationView'
 import { ScriptView } from './features/script/ScriptView'
 import { usePolling } from './hooks/usePolling'
 
@@ -20,6 +21,8 @@ export function App() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [showGuidelines, setShowGuidelines] = useState(false)
   const [guidelinesVersion, setGuidelinesVersion] = useState(0)
+  const [publicationId, setPublicationId] = useState<string | null>(null)
+  const [publicationVersion, setPublicationVersion] = useState(0)
 
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -48,6 +51,7 @@ export function App() {
       const created = await api.startNewsSearch(topic, options)
       setItemId(null)
       setScriptId(null)
+      setPublicationId(null)
       setSearchId(created.id)
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Falha ao iniciar a busca')
@@ -57,12 +61,14 @@ export function App() {
   const openSearch = (id: string) => {
     setItemId(null)
     setScriptId(null)
+    setPublicationId(null)
     setSearchId(id)
   }
 
   const generateScript = async (newsItemId: string, force = false) => {
     setActionError(null)
     setItemId(newsItemId)
+    setPublicationId(null)
     try {
       const created = await api.generateScript(newsItemId, force)
       setScriptId(created.id)
@@ -75,12 +81,19 @@ export function App() {
   // O chat pode executar ações (buscar, gerar roteiro, refazer B-roll, salvar orientação): a tela segue o resultado.
   const applyChatActions = (actions: ChatAction[]) => {
     for (const a of actions.filter((x) => x.status === 'done')) {
-      const { search_id, news_item_id, script_id } = a.refs
-      if (a.type === 'search_news') {
+      const { search_id, news_item_id, script_id, publication_id } = a.refs
+      if (a.type === 'set_publication' || a.type === 'revise_publication') {
+        if (publication_id) {
+          setPublicationId(publication_id)
+          setPublicationVersion((v) => v + 1) // a página recarrega e mostra o que o chat mudou
+        }
+      } else if (a.type === 'search_news') {
+        setPublicationId(null)
         setItemId(null)
         setScriptId(null)
         setSearchId(search_id)
       } else if (a.type === 'generate_script') {
+        setPublicationId(null)
         if (search_id && search_id !== searchId) setSearchId(search_id)
         setItemId(news_item_id)
         setScriptId(script_id)
@@ -122,6 +135,10 @@ export function App() {
         </section>
 
         <section className="column script-column" aria-label="Roteiro">
+          {publicationId ? (
+            <PublicationView publicationId={publicationId} refreshKey={publicationVersion} onClose={() => setPublicationId(null)} />
+          ) : (
+            <>
           {selectedItem && <p className="source">Notícia: {selectedItem.title}</p>}
           {script.data?.instructions && <p className="source">Pedido aplicado: {script.data.instructions}</p>}
           <ScriptView
@@ -133,10 +150,13 @@ export function App() {
             }}
             onCutsChanged={(s) => script.setData(s)}
             onRetryScript={() => itemId && void generateScript(itemId, true)}
+            onPublication={setPublicationId}
           />
+            </>
+          )}
         </section>
 
-        <ChatPanel context={{ search_id: searchId, script_id: scriptId }} onActions={applyChatActions} />
+        <ChatPanel context={{ search_id: searchId, script_id: scriptId, publication_id: publicationId }} onActions={applyChatActions} />
       </main>
       {showGuidelines && <GuidelinesPanel refreshKey={guidelinesVersion} onClose={() => setShowGuidelines(false)} />}
     </div>

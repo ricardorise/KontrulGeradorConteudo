@@ -128,6 +128,51 @@ export interface Message {
 export interface ScreenContext {
   search_id: string | null
   script_id: string | null
+  publication_id?: string | null
+}
+
+export type PublicationStatus = 'drafting' | 'ready' | 'publishing' | 'published' | 'failed'
+
+export interface PublicationLink {
+  label: string
+  url: string
+  kind: 'source' | 'broll'
+}
+
+export interface Publication {
+  id: string
+  render_id: string
+  script_id: string
+  status: PublicationStatus
+  title: string
+  title_alternatives: string[]
+  description: string
+  tags: string[]
+  links: PublicationLink[]
+  full_description: string
+  description_chars: number
+  privacy: string
+  allowed_privacies: string[]
+  notify_subscribers: boolean
+  rationale: string | null
+  error: string | null
+  error_stage: string | null
+  problems: string[]
+  can_publish: boolean
+  video_id: string | null
+  video_url: string | null
+  limits: { title: number; description: number }
+  updated_at: string
+  published_at: string | null
+}
+
+export interface PublicationEdit {
+  title?: string
+  description?: string
+  tags?: string[]
+  links?: PublicationLink[]
+  privacy?: string
+  notify_subscribers?: boolean
 }
 
 export type GuidelineScope = 'news' | 'script' | 'broll' | 'all'

@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from studio.interfaces.http.container import UseCases
 from studio.interfaces.http.deps import require_api_key
-from studio.interfaces.http.routers import conversations, guidelines, news, renders, scripts
+from studio.interfaces.http.routers import conversations, guidelines, news, publications, renders, scripts
 from studio.shared.domain.errors import Conflict, DomainError, NotFound
 
 
@@ -18,7 +18,7 @@ def build_app(use_cases: UseCases, *, api_key: str | None, cors_origins: tuple[s
         )
 
     api = APIRouter(prefix="/api", dependencies=[Depends(require_api_key)])
-    for module in (news, scripts, conversations, guidelines, renders):
+    for module in (news, scripts, conversations, guidelines, renders, publications):
         api.include_router(module.router)
     app.include_router(api)
 

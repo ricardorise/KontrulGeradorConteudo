@@ -9,6 +9,7 @@ import { VolumeSlider } from './VolumeSlider'
 interface Props {
   scriptId: string
   onClose: () => void
+  onPublication?: (publicationId: string) => void // abre a página de publicação no YouTube
 }
 
 const active = (r: Render) => r.status === 'pending' || r.status === 'running'
@@ -30,7 +31,7 @@ const remember = (kind: VignetteKind, id: string | null) => {
   }
 }
 
-function Status({ render }: { render: Render }) {
+function Status({ render, onPublication }: { render: Render; onPublication?: () => void }) {
   if (render.status === 'failed') return <p className="error">Falhou: {render.error}</p>
   if (render.status === 'done')
     return (
@@ -40,6 +41,11 @@ function Status({ render }: { render: Render }) {
         <a className="download" href={videoUrl(render.id, true)}>
           Baixar MP4
         </a>
+        {onPublication && (
+          <button className="youtube-btn" onClick={onPublication}>
+            Preparar publicação no YouTube
+          </button>
+        )}
       </div>
     )
   return (
@@ -54,7 +60,7 @@ function Status({ render }: { render: Render }) {
   )
 }
 
-export function RenderDialog({ scriptId, onClose }: Props) {
+export function RenderDialog({ scriptId, onClose, onPublication }: Props) {
   const [preview, setPreview] = useState<RenderPreview | null>(null)
   const [background, setBackground] = useState('')
   const [renderId, setRenderId] = useState<string | null>(null)
@@ -150,6 +156,17 @@ export function RenderDialog({ scriptId, onClose }: Props) {
       setError(e instanceof Error ? e.message : 'Falha ao remixar')
     } finally {
       setRemixing(false)
+    }
+  }
+
+  const openPublication = async () => {
+    if (!render.data || !onPublication) return
+    setError(null)
+    try {
+      onPublication((await api.preparePublication(render.data.id)).id) // idempotente: reabre o rascunho existente
+      onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falha ao preparar a publicação')
     }
   }
 
@@ -311,7 +328,7 @@ export function RenderDialog({ scriptId, onClose }: Props) {
         {render.data && (
           <section className="render-status" aria-label="Status da renderização">
             <h3 className="render-h">Última renderização</h3>
-            <Status render={render.data} />
+            <Status render={render.data} onPublication={onPublication ? () => void openPublication() : undefined} />
             {render.data.can_remix && (
               <div className="remix">
                 <button className="secondary" onClick={() => void remix()} disabled={!canRemix || remixing || running}>

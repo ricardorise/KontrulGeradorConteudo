@@ -7,6 +7,7 @@ from studio.conversation.domain.conversation import ActionOutcome, Conversation,
 from studio.guidance.domain.guideline import Guideline
 from studio.discovery.domain.news_search import NewsItem, NewsSearch
 from studio.scripting.domain.script import BrollSuggestion, Cut, Paragraph, Script
+from studio.publishing.domain.publication import DESCRIPTION_MAX, PRIVACIES, TITLE_MAX, Publication
 from studio.rendering.application.use_cases import RenderPreview
 from studio.rendering.domain.asset import RenderAsset
 from studio.rendering.domain.render_job import RenderJob
@@ -165,6 +166,7 @@ class ConversationIn(BaseModel):
 class ScreenContextIn(BaseModel):
     search_id: UUID | None = None
     script_id: UUID | None = None
+    publication_id: UUID | None = None
 
 
 class MessageIn(BaseModel):
@@ -358,3 +360,76 @@ class RenderAssetOut(BaseModel):
             width=a.width, height=a.height, has_audio=a.has_audio, audio_silent=a.audio_silent,
             mean_volume_db=a.mean_volume_db, available=available, created_at=a.created_at,
         )  # fmt: skip
+
+
+class LinkIO(BaseModel):
+    label: str = Field(min_length=1, max_length=200)
+    url: str = Field(min_length=8, max_length=500)
+    kind: str = Field(default="source", pattern="^(source|broll)$")
+
+
+class PublicationOut(BaseModel):
+    id: UUID
+    render_id: UUID
+    script_id: UUID
+    status: str
+    title: str
+    title_alternatives: list[str]
+    description: str
+    tags: list[str]
+    links: list[LinkIO]
+    full_description: str  # exatamente o texto que irá ao YouTube
+    description_chars: int
+    privacy: str
+    allowed_privacies: list[str]
+    category_id: str
+    language: str
+    notify_subscribers: bool
+    rationale: str | None
+    error: str | None
+    error_stage: str | None
+    problems: list[str]
+    can_publish: bool
+    video_id: str | None
+    video_url: str | None
+    limits: dict[str, int]
+    created_at: datetime
+    updated_at: datetime
+    published_at: datetime | None
+
+    @classmethod
+    def of(cls, p: Publication) -> "PublicationOut":
+        problems = p.problems() if p.status.value == "ready" else []
+        return cls(
+            id=p.id, render_id=p.render_id, script_id=p.script_id, status=p.status.value, title=p.title,
+            title_alternatives=p.title_alternatives, description=p.description, tags=p.tags,
+            links=[LinkIO(label=l.label, url=l.url, kind=l.kind) for l in p.links], full_description=p.full_description,
+            description_chars=len(p.full_description), privacy=p.privacy, allowed_privacies=list(PRIVACIES),
+            category_id=p.category_id, language=p.language, notify_subscribers=p.notify_subscribers,
+            rationale=p.rationale, error=p.error, error_stage=p.error_stage, problems=problems,
+            can_publish=p.status.value == "ready" and not problems, video_id=p.video_id, video_url=p.video_url,
+            limits={"title": TITLE_MAX, "description": DESCRIPTION_MAX}, created_at=p.created_at,
+            updated_at=p.updated_at, published_at=p.published_at,
+        )  # fmt: skip
+
+
+class PreparePublicationIn(BaseModel):
+    force: bool = False  # cria um novo rascunho mesmo havendo um para este vídeo
+
+
+class PublicationEditIn(BaseModel):
+    title: str | None = Field(default=None, max_length=300)
+    description: str | None = Field(default=None, max_length=8000)
+    tags: list[str] | None = Field(default=None, max_length=60)
+    links: list[LinkIO] | None = Field(default=None, max_length=60)
+    privacy: str | None = None
+    notify_subscribers: bool | None = None
+
+
+class PublicationReviseIn(BaseModel):
+    target: str = Field(default="all", pattern="^(title|description|tags|all)$")
+    instructions: str = Field(min_length=3, max_length=1000)
+
+
+class PublicationPublishIn(BaseModel):
+    confirm: bool = False  # precisa ser true: a publicação só ocorre por decisão explícita do editor

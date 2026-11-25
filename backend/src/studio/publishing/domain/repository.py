@@ -1,0 +1,16 @@
+from typing import Protocol
+from uuid import UUID
+
+from studio.publishing.domain.publication import Publication
+
+
+class PublicationRepository(Protocol):
+    async def add(self, publication: Publication) -> None: ...
+
+    async def save(self, publication: Publication) -> None: ...
+
+    async def get(self, publication_id: UUID) -> Publication | None: ...
+
+    async def latest_for_render(self, render_id: UUID) -> Publication | None: ...
+
+    async def fail_interrupted(self) -> int: ...

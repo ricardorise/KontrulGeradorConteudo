@@ -6,6 +6,7 @@ import { CutList } from './CutList'
 import { ParagraphRow } from './ParagraphRow'
 
 interface Props {
+  onPublication?: (publicationId: string) => void
   script: Script | null
   error: string | null
   onChanged: (script: Script) => void
@@ -13,7 +14,7 @@ interface Props {
   onRetryScript: () => void
 }
 
-export function ScriptView({ script, error, onChanged, onCutsChanged, onRetryScript }: Props) {
+export function ScriptView({ script, error, onChanged, onCutsChanged, onRetryScript, onPublication }: Props) {
   const [selecting, setSelecting] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [autoOpenId, setAutoOpenId] = useState<string | null>(null)
@@ -158,7 +159,7 @@ export function ScriptView({ script, error, onChanged, onCutsChanged, onRetryScr
           autoOpenBrollId={autoOpenId}
         />
       ))}
-      <CutList script={script} onDelete={(id) => void deleteCut(id)} />
+      <CutList script={script} onDelete={(id) => void deleteCut(id)} onPublication={onPublication} />
     </section>
   )
 }

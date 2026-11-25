@@ -2,7 +2,7 @@
 
 Estúdio web para transformar **um tema em vídeo**, conversando com a equipe de agentes do Hermes e renderizando no ComfyUI:
 
-**tema → notícias (Tonton) → roteiro (Jules Verne) → B-roll (Lumière) → cortes no player → vídeo final (ComfyUI + ffmpeg)**
+**tema → notícias (Tonton) → roteiro (Jules Verne) → B-roll (Lumière) → cortes no player → vídeo final (ComfyUI + ffmpeg) → publicação no YouTube**
 
 Tudo fica salvo no PostgreSQL (`kontrul-postgres-1`, schema `content_studio`).
 
@@ -12,6 +12,7 @@ Tudo fica salvo no PostgreSQL (`kontrul-postgres-1`, schema `content_studio`).
 - **Roteiro** de narração gerado a partir da notícia, com instruções pontuais ("mais curto", "tom informal").
 - **B-roll** do YouTube ao lado de cada parágrafo.
 - **Editor de cortes**: player do YouTube com timeline, intervalo por alças, duplo clique para registrar, vínculo do corte com um **trecho do texto** (âncora) e exportação em CSV/JSON.
+- **Publicação no YouTube**: Jules Verne escreve a descrição, Youtoba cria título e tags, a página mostra o resumo completo (com links), aceita alterações pelo chat e tem o botão **Publicar** (privado/não listado; quem envia é o Sniper).
 - **Envio ao ComfyUI** (workflow "videos do papotechcast"): lista de edição validada, **upload de background, vinheta de abertura, vinheta final e áudio de fundo**, níveis de volume por etapa, acompanhamento, download do MP4 e **Remixar** (refaz só a montagem, sem GPU).
 - **Chat com os bots** (Tonton, Jules Verne, Lumière, Baru) que **executa ações na tela** (buscar, gerar roteiro, refazer B-roll, salvar orientação).
 - **Orientações**: preferências persistentes aplicadas aos próximos pedidos aos bots.

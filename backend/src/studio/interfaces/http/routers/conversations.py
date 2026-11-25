@@ -32,5 +32,5 @@ async def get_conversation(conversation_id: UUID, uc: UC) -> ConversationOut:
 
 @router.post("/{conversation_id}/messages", response_model=ConversationOut, status_code=202)
 async def send_message(conversation_id: UUID, body: MessageIn, uc: UC) -> ConversationOut:
-    context = ScreenContext(body.context.search_id, body.context.script_id)
+    context = ScreenContext(body.context.search_id, body.context.script_id, body.context.publication_id)
     return ConversationOut.of(await uc.send_message(conversation_id, body.content, context))

@@ -12,6 +12,7 @@ class ScreenContext:
 
     search_id: UUID | None = None
     script_id: UUID | None = None
+    publication_id: UUID | None = None  # rascunho de publicação no YouTube aberto na tela
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,7 @@ class ScreenSnapshot:
     news_titles: list[str] = field(default_factory=list)
     script_title: str | None = None
     script_paragraphs: list[str] = field(default_factory=list)
+    publication: str | None = None  # resumo do rascunho de publicação aberto
 
 
 class StudioGateway(Protocol):
@@ -34,3 +36,7 @@ class StudioGateway(Protocol):
     async def rebuild_broll(self, ctx: ScreenContext, instructions: str | None) -> ActionOutcome: ...
 
     async def remember(self, scope: GuidelineScope, text: str) -> ActionOutcome: ...
+
+    async def edit_publication(self, ctx: ScreenContext, fields: dict) -> ActionOutcome: ...
+
+    async def revise_publication(self, ctx: ScreenContext, target: str, instructions: str) -> ActionOutcome: ...

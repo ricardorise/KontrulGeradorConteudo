@@ -29,15 +29,28 @@ from studio.infrastructure.persistence.news_repository import PostgresNewsSearch
 from studio.infrastructure.persistence.news_source_reader import DiscoveryNewsSourceReader
 from studio.infrastructure.media.ffmpeg import FfmpegProbe, FfmpegVideoComposer
 from studio.infrastructure.media.store import LocalMediaStore
+from studio.infrastructure.persistence.publication_repository import PostgresPublicationRepository
+from studio.infrastructure.persistence.publication_source import RenderPublicationSource
 from studio.infrastructure.persistence.render_asset_repository import PostgresRenderAssetRepository
 from studio.infrastructure.persistence.render_repository import PostgresRenderJobRepository
 from studio.infrastructure.persistence.render_script_source import ScriptingScriptSourceReader
 from studio.infrastructure.persistence.script_repository import PostgresScriptRepository
 from studio.infrastructure.studio_gateway import StudioUseCaseGateway
 from studio.infrastructure.youtube.oembed import YoutubeOEmbed
+from studio.infrastructure.publishing.hermes_publisher import HermesYoutubePublisher
 from studio.infrastructure.runtime.background import AsyncioBackgroundRunner
 from studio.interfaces.http.app import build_app
 from studio.interfaces.http.container import UseCases
+from studio.publishing.application.use_cases import (
+    EditPublication,
+    GetPublication,
+    GetPublicationForRender,
+    PreparePublication,
+    PublicationWorkflow,
+    PublishToYoutube,
+    RegeneratePublication,
+    RevisePublication,
+)
 from studio.rendering.application.use_cases import (
     DeleteRenderAsset,
     GetRender,
@@ -52,6 +65,7 @@ from studio.rendering.application.use_cases import (
     UploadRenderAsset,
     resume_active,
 )
+from studio.shared.domain.bots import Bot
 from studio.scripting.application.use_cases import (
     AddBroll,
     AddCut,
@@ -91,7 +105,7 @@ def create_app() -> FastAPI:
         news_repo = PostgresNewsSearchRepository(pool)
         script_repo = PostgresScriptRepository(pool)
         conversation_repo = PostgresConversationRepository(pool)
-        interrupted = sum([await news_repo.fail_interrupted(), await script_repo.fail_interrupted(),
+        interrupted = sum([await PostgresPublicationRepository(pool).fail_interrupted(), await news_repo.fail_interrupted(), await script_repo.fail_interrupted(),
                            await conversation_repo.fail_interrupted()])  # fmt: skip
         if interrupted:
             log.warning("%d tarefa(s) interrompida(s) pelo último desligamento foram marcadas como falhas", interrupted)
@@ -111,7 +125,26 @@ def create_app() -> FastAPI:
         start_news_search = StartNewsSearch(news_repo, agents, runner, guideline_texts)
         get_news_search, get_script = GetNewsSearch(news_repo), GetScript(script_repo)
         start_script, retry_broll = StartScriptGeneration(workflow), RetryBroll(workflow)
-        studio = StudioUseCaseGateway(start_news_search, get_news_search, start_script, get_script, retry_broll, add_guideline)
+        publication_repo = PostgresPublicationRepository(pool)
+        open_render_video = OpenRenderVideo(render_repo, renderer, media_store)
+        publisher_agents = HermesCliGateway(
+            container=settings.hermes_container, ssh_target=settings.hermes_ssh_target, ssh_key=settings.hermes_ssh_key,
+            timeout_s=settings.publish_timeout_s, max_concurrent=1,
+        )  # envio ao YouTube é lento e é uma publicação por vez
+        publisher = HermesYoutubePublisher(
+            publisher_agents, open_render_video, ssh_target=settings.hermes_ssh_target, ssh_key=settings.hermes_ssh_key,
+            host_dir=settings.yt_host_dir, agent_dir=settings.yt_agent_dir, bot=Bot(settings.publisher_bot),
+        )  # fmt: skip
+        publication_workflow = PublicationWorkflow(
+            publication_repo, RenderPublicationSource(render_repo, script_repo, news_repo), agents, runner, publisher, guideline_texts
+        )  # fmt: skip
+        edit_publication = EditPublication(publication_repo)
+        revise_publication = RevisePublication(publication_workflow)
+        get_publication = GetPublication(publication_repo)
+        studio = StudioUseCaseGateway(
+            start_news_search, get_news_search, start_script, get_script, retry_broll, add_guideline,
+            edit_publication, revise_publication, get_publication,
+        )  # fmt: skip
         app.state.use_cases = UseCases(
             start_news_search=start_news_search,
             get_news_search=get_news_search,
@@ -140,7 +173,14 @@ def create_app() -> FastAPI:
             remix_render=RemixRender(render_repo, asset_repo, runner, finisher),
             get_render=GetRender(render_repo),
             list_renders=ListRenders(render_repo),
-            open_render_video=OpenRenderVideo(render_repo, renderer, media_store),
+            open_render_video=open_render_video,
+            prepare_publication=PreparePublication(publication_workflow),
+            get_publication=get_publication,
+            get_publication_for_render=GetPublicationForRender(publication_repo),
+            edit_publication=edit_publication,
+            revise_publication=revise_publication,
+            regenerate_publication=RegeneratePublication(publication_workflow),
+            publish_publication=PublishToYoutube(publication_workflow),
             get_conversation=GetConversation(conversation_repo),
             list_conversations=ListConversations(conversation_repo),
         )

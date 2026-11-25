@@ -5,11 +5,12 @@ import { cutRows, download, toCsv, toJson, toText } from './exportCuts'
 import { formatClock } from './timeline'
 
 interface Props {
+  onPublication?: (publicationId: string) => void
   script: Script
   onDelete: (cutId: string) => void
 }
 
-export function CutList({ script, onDelete }: Props) {
+export function CutList({ script, onDelete, onPublication }: Props) {
   const [copied, setCopied] = useState(false)
   const [rendering, setRendering] = useState(false)
   const rows = cutRows(script.cuts, script.paragraphs)
@@ -70,7 +71,7 @@ export function CutList({ script, onDelete }: Props) {
         </button>
         <span className="muted">Envia roteiro + cortes ao workflow “videos do papotechcast”.</span>
       </footer>
-      {rendering && <RenderDialog scriptId={script.id} onClose={() => setRendering(false)} />}
+      {rendering && <RenderDialog scriptId={script.id} onClose={() => setRendering(false)} onPublication={onPublication} />}
     </section>
   )
 }

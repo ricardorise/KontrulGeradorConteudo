@@ -256,3 +256,20 @@ button.small { padding: 3px 8px; font-size: 12px; }
 .broll-url-form input { flex: 1 1 220px; min-width: 0; }
 .broll-url-form .error { flex-basis: 100%; margin: 0; font-size: 13px; }
 .badge-manual { align-self: flex-start; color: var(--accent); border-color: var(--accent); }
+
+/* Publicação no YouTube */
+.publication { display: flex; flex-direction: column; gap: 4px; }
+.publication-head { display: flex; justify-content: space-between; align-items: center; }
+.publication-head h2 { margin: 0; font-size: 18px; }
+.alternatives { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.alternatives .alt { font-size: 12px; padding: 3px 8px; text-align: left; }
+.tag-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pub-links { list-style: none; padding: 0; margin: 4px 0; font-size: 13px; }
+.pub-links li { display: flex; gap: 8px; align-items: center; margin: 3px 0; overflow-wrap: anywhere; }
+.pub-links button { padding: 0 6px; font-size: 12px; }
+.pub-options { display: flex; flex-direction: column; gap: 2px; max-width: 320px; }
+.revise { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 4px; }
+.revise-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.revise-row input { flex: 1; min-width: 180px; }
+.youtube-btn { background: #c4302b; border-color: #c4302b; color: #fff; }
+.youtube-btn:disabled { opacity: .5; }

@@ -95,7 +95,19 @@ Tudo é enviado por upload na própria tela (as escolhas ficam lembradas):
 ### Remixar
 **Remixar com estes volumes e vinhetas** refaz **só a montagem final** (vinhetas, níveis, trilha) reaproveitando o vídeo da fala que o ComfyUI já gerou: leva segundos e não usa GPU nem ElevenLabs. O volume do background não muda no remix (exige novo envio). Se a trilha foi embutida pelo ComfyUI (envio sem vinhetas), ela não pode ser trocada.
 
-## 6. Chat com os bots
+## 6. Publicação no YouTube
+
+Com o vídeo pronto (diálogo do ComfyUI), o botão **Preparar publicação no YouTube** abre a página de resumo no centro da tela (o chat continua ao lado).
+
+1. **Jules Verne** escreve a melhor descrição a partir do roteiro; **Youtoba** cria o melhor título (com 3 alternativas e a justificativa) e as tags.
+2. A página mostra o **resumo completo**: título (contador /100), descrição, tags, **links que irão na descrição** (fontes da notícia/Radar e os vídeos usados nas cenas, montados pelo app, nunca inventados), visibilidade e o **texto final** exatamente como irá ao YouTube (limite de 5000 caracteres).
+3. **Alterações**: edite os campos e **Salvar edições**; ou peça uma revisão ("Revisar", escolhendo título/descrição/tags/tudo); ou **peça pelo chat** (ex.: "deixe o título mais curto", "descrição mais informal", "troque as tags", "deixe como não listado"). A mesma página atualiza sozinha.
+4. **Publicar no YouTube** pede confirmação e envia o MP4 ao canal. Só existe pelo botão: o chat nunca publica.
+5. Visibilidade: **privado** (padrão) ou **não listado**. Tornar público é feito no YouTube Studio após conferir o vídeo (política do Hermes).
+
+> **Quem publica:** o Youtoba tem acesso **somente leitura** ao YouTube, então a publicação é feita pelo agente **Sniper** (ferramenta `youtube_publish`). É configurável com `STUDIO_PUBLISHER_BOT`.
+
+## 7. Chat com os bots
 
 O painel da direita tem abas para **Tonton**, **Jules Verne**, **Lumière** e **Baru** (supervisor). As conversas ficam salvas e voltam ao abrir a aba.
 
@@ -107,16 +119,18 @@ Além de conversar, o chat **executa ações na tela**. Quando o pedido correspo
 | Gerar roteiro | "gere o roteiro da notícia 2 com no máximo 5 parágrafos" |
 | Refazer B-roll | "refaça o B-roll com cenas de review" |
 | Salvar orientação | "a partir de agora, roteiros em tom informal" |
+| Editar publicação (página aberta) | "título mais curto", "deixe como não listado" |
+| Revisar publicação | "reescreva a descrição em tom informal", "gere outras tags" |
 
 Um chip verde/vermelho mostra o que foi executado, e a tela segue o resultado. O bot enxerga o que está na tela (lista de notícias e roteiro aberto), por isso "a notícia 3" funciona. Se for só conversa, ele responde sem executar nada.
 
-## 7. Orientações (o app "aprende")
+## 8. Orientações (o app "aprende")
 
 Botão **Orientações** no topo. São preferências **persistentes** aplicadas automaticamente aos prompts seguintes do Tonton, Jules Verne e Lumière, conforme o escopo (`notícias`, `roteiro`, `B-roll`, `tudo`):
 - Criadas ali ou **pedindo no chat** ("sempre…", "a partir de agora…", "nunca…").
 - Cada uma pode ser ligada/desligada ou apagada; no máximo 30 ativas, 300 caracteres cada.
 - Não é treino de modelo: é memória de preferências injetada nos prompts. Roteiros já gerados não mudam.
 
-## 8. Atualização automática
+## 9. Atualização automática
 
 A tela nunca fica parada: busca, roteiro e conversa continuam sendo consultados devagar mesmo depois de prontos, pausam com a aba oculta e atualizam na hora ao voltar o foco.

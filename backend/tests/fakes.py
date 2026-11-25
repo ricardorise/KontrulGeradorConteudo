@@ -175,6 +175,14 @@ class FakeStudio:
         self.calls.append(("rebuild_broll", instructions))
         return self._ok("rebuild_broll", "Refazendo o B-roll")
 
+    async def edit_publication(self, ctx, fields):
+        self.calls.append(("edit_publication", fields))
+        return self._ok("set_publication", "Publicação atualizada", publication_id="pub1")
+
+    async def revise_publication(self, ctx, target, instructions):
+        self.calls.append(("revise_publication", target, instructions))
+        return self._ok("revise_publication", "Revisando", publication_id="pub1")
+
     async def remember(self, scope, text):
         self.calls.append(("remember", scope.value, text))
         return self._ok("save_guideline", f"Orientação salva: {text}")

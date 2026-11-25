@@ -11,6 +11,15 @@ log = logging.getLogger(__name__)
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 
+def ssh_prefix(ssh_target: str, ssh_key: str | None = None) -> list[str]:
+    """Comando ssh base (sem interação) usado para falar com o servidor do Hermes."""
+    ssh = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=30"]
+    if ssh_key:
+        known_hosts = os.path.join(os.path.dirname(ssh_key), "known_hosts")
+        ssh += ["-i", ssh_key, "-o", f"UserKnownHostsFile={known_hosts}", "-o", "StrictHostKeyChecking=yes"]
+    return [*ssh, ssh_target]
+
+
 class HermesCliGateway:
     """Adaptador da porta AgentGateway: `hermes -p <bot> -z` dentro do container do Hermes.
 
@@ -47,11 +56,7 @@ exec hermes -p "$0" -z "$prompt"
         ]  # fmt: skip
         if not self._ssh_target:
             return remote
-        ssh = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=30"]
-        if self._ssh_key:
-            known_hosts = os.path.join(os.path.dirname(self._ssh_key), "known_hosts")
-            ssh += ["-i", self._ssh_key, "-o", f"UserKnownHostsFile={known_hosts}", "-o", "StrictHostKeyChecking=yes"]
-        return [*ssh, self._ssh_target, shlex.join(remote)]
+        return [*ssh_prefix(self._ssh_target, self._ssh_key), shlex.join(remote)]
 
     async def ask(self, bot: Bot, prompt: str) -> str:
         async with self._slots:

@@ -66,5 +66,13 @@ Feita **no app**, depois que o ComfyUI termina:
 
 Sem `ffmpeg` no PATH, use `STUDIO_FFMPEG`. O pacote de desenvolvimento `imageio-ffmpeg` traz um binário estático para testes.
 
+## Publicação no YouTube (Sniper)
+
+- **Youtoba** é somente leitura no YouTube: aqui ele só cria **título e tags**. O **Jules Verne** escreve a descrição.
+- Quem publica é o **Sniper** (`yt_upload_video`), configurável por `STUDIO_PUBLISHER_BOT`. O app copia o MP4 por SSH para `STUDIO_YT_HOST_DIR` (`studio-<render>.mp4`, via `.part` + `mv`), pede o envio informando título/descrição/tags/visibilidade e apaga a cópia ao final. A resposta esperada é JSON `{published, video_id, privacy, error}`.
+- Política do Hermes: só `private` ou `unlisted`. Em caso de timeout o app avisa para conferir o YouTube Studio antes de tentar de novo (evita duplicar).
+- Os links da descrição (fontes e vídeos usados) são montados pelo app, de forma determinística.
+- A publicação roda num gateway próprio (timeout `STUDIO_PUBLISH_TIMEOUT_S`, concorrência 1).
+
 ## YouTube
 O app só usa links e o player oficial incorporado (IFrame API, domínio `youtube-nocookie.com`). Nenhum vídeo do YouTube é baixado pelo app — o download e o recorte acontecem **dentro do workflow do ComfyUI**, durante a execução.

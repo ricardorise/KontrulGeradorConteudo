@@ -17,6 +17,10 @@
 | `STUDIO_MEDIA_DIR` | `./data/media` | Uploads e vídeos montados |
 | `STUDIO_MAX_UPLOAD_MB` | `2048` | Limite de upload |
 | `STUDIO_FFMPEG` | `ffmpeg` | Binário do ffmpeg |
+| `STUDIO_PUBLISHER_BOT` | `sniper` | Agente que publica no YouTube (o Youtoba é só leitura) |
+| `STUDIO_YT_HOST_DIR` | `/home/rises/.hermes/shared/youtube` | Pasta no servidor do Hermes onde o MP4 é depositado para o envio |
+| `STUDIO_YT_AGENT_DIR` | `/opt/data/shared/youtube` | Mesma pasta vista de dentro do contêiner do Hermes |
+| `STUDIO_PUBLISH_TIMEOUT_S` | `1800` | Tempo máximo do envio ao YouTube |
 | `STUDIO_API_KEY` | vazio | Se definida, exige `X-API-Key` |
 | `STUDIO_CORS_ORIGINS` | vazio | Origens extras (lista separada por vírgula) |
 

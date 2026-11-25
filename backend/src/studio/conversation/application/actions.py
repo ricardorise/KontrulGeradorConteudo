@@ -22,6 +22,10 @@ Ações:
 - {"action":"generate_script","news_number":N,"instructions":"opcional: tom, tamanho, ângulo, público..."}  (N = número da notícia na lista da tela)
 - {"action":"rebuild_broll","instructions":"opcional: que tipo de cena o usuário quer"}  (refaz o B-roll do roteiro aberto)
 - {"action":"save_guideline","scope":"news|script|broll|all","text":"regra curta e clara"}
+- {"action":"set_publication","title":"...","description":"...","tags":["..."],"privacy":"private|unlisted"}  (só os campos que o usuário pediu para mudar; use quando VOCÊ já sabe o texto novo, ex.: "troque o título para X", "adicione a tag Y")
+- {"action":"revise_publication","target":"title|description|tags|all","instructions":"o que o usuário quer"}  (delega a um especialista: título e tags = Youtoba, descrição = Jules Verne; use quando o pedido for "melhore/refaça/gere outro")
+
+Publicação no YouTube: quando a tela mostra um RASCUNHO DE PUBLICAÇÃO, os pedidos de mudar título, descrição, tags ou privacidade usam set_publication ou revise_publication. Você NUNCA publica no YouTube: quem publica é o usuário, clicando em "Publicar" na tela. Se pedirem para publicar, explique isso e oriente a conferir o resumo e usar o botão.
 
 Para pedidos de Radar de Tendências/Notícias ao Tonton, emita search_news preservando o nome do Radar, o escopo e TODAS as instruções do usuário; o executor aplicará o perfil e a memória oficiais do Tonton. Não substitua o Radar por uma lista genérica nem invente parâmetros de pesquisa.
 
@@ -31,6 +35,8 @@ Se for só conversa, dúvida ou opinião, responda normalmente, sem bloco. Nunca
 
 def render_snapshot(snapshot: ScreenSnapshot) -> str:
     lines = ["Estado atual da tela:"]
+    if snapshot.publication:
+        lines.append("RASCUNHO DE PUBLICAÇÃO NO YOUTUBE (aberto na tela):\n" + snapshot.publication)
     if snapshot.news_titles:
         lines.append(f"Notícias listadas (busca: {snapshot.search_topic}):")
         lines += [f"  {i}. {title}" for i, title in enumerate(snapshot.news_titles, 1)]
@@ -96,6 +102,12 @@ class ActionExecutor:
             return await self._studio.generate_script(ctx, number, instructions)
         if kind == "rebuild_broll":
             return await self._studio.rebuild_broll(ctx, instructions)
+        if kind == "set_publication":
+            fields = {k: data[k] for k in ("title", "description", "tags", "privacy") if k in data}
+            return await self._studio.edit_publication(ctx, fields) if fields else _invalid(kind, "nenhum campo informado")
+        if kind == "revise_publication":
+            target = str(data.get("target") or "all").lower()
+            return await self._studio.revise_publication(ctx, target, instructions) if instructions else _invalid(kind, "instruções ausentes")
         if kind == "save_guideline":
             text = _text(data, "text")
             try:

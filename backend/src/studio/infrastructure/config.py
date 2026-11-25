@@ -23,6 +23,10 @@ class Settings:
     media_dir: str
     max_upload_mb: int
     ffmpeg: str
+    publisher_bot: str
+    yt_host_dir: str
+    yt_agent_dir: str
+    publish_timeout_s: float
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -43,4 +47,8 @@ class Settings:
             media_dir=env.get("STUDIO_MEDIA_DIR", "./data/media"),
             max_upload_mb=int(env.get("STUDIO_MAX_UPLOAD_MB", "2048")),
             ffmpeg=env.get("STUDIO_FFMPEG", "ffmpeg"),
+            publisher_bot=env.get("STUDIO_PUBLISHER_BOT", "sniper"),  # perfil do Hermes com a ferramenta youtube_publish
+            yt_host_dir=env.get("STUDIO_YT_HOST_DIR", "/home/rises/.hermes/shared/youtube"),  # no servidor do Hermes
+            yt_agent_dir=env.get("STUDIO_YT_AGENT_DIR", "/opt/data/shared/youtube"),  # a mesma pasta, vista pelo contêiner do Hermes
+            publish_timeout_s=float(env.get("STUDIO_PUBLISH_TIMEOUT_S", "1800")),
         )

@@ -6,7 +6,7 @@ import { RenderDialog } from './RenderDialog'
 vi.mock('../../api/client', () => ({
   api: {
     renderPreview: vi.fn(), listRenders: vi.fn(), startRender: vi.fn(), getRender: vi.fn(),
-    listRenderAssets: vi.fn(), uploadRenderAsset: vi.fn(), deleteRenderAsset: vi.fn(), remixRender: vi.fn(),
+    listRenderAssets: vi.fn(), uploadRenderAsset: vi.fn(), deleteRenderAsset: vi.fn(), remixRender: vi.fn(), preparePublication: vi.fn(),
   },
 }))
 
@@ -291,4 +291,17 @@ test('mídia sem arquivo neste ambiente aparece desativada e a escolha lembrada 
   expect(option).toBeDisabled()
   expect(screen.getByText(/não têm o arquivo neste ambiente/)).toBeInTheDocument()
   await waitFor(() => expect(localStorage.getItem('vignette:intro')).toBeNull())
+})
+
+test('com vídeo pronto, abre a página de publicação no YouTube', async () => {
+  const done = job({ status: 'done', has_video: true, video_name: 'final.mp4' })
+  vi.mocked(api.renderPreview).mockResolvedValue(preview())
+  vi.mocked(api.listRenders).mockResolvedValue([done])
+  vi.mocked(api.getRender).mockResolvedValue(done)
+  vi.mocked(api.preparePublication).mockResolvedValue({ id: 'pub1' } as never)
+  const onPublication = vi.fn()
+  render(<RenderDialog scriptId="s1" onClose={() => {}} onPublication={onPublication} />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Preparar publicação no YouTube' }))
+  await waitFor(() => expect(onPublication).toHaveBeenCalledWith('pub1'))
+  expect(api.preparePublication).toHaveBeenCalledWith('r1')
 })
