@@ -97,14 +97,16 @@ docker compose down                # para (os dados do volume e do banco permane
 ## Acesso pela VPS (VPN) com o login do KontrulEditor
 
 A VPS alcança o `rises` pela VPN ZeroTier (`10.241.168.46`). O app é publicado **sob o mesmo prefixo do Editor**, em
-`https://<dominio-da-vps>/kontrul-editor/gerador/`, para reaproveitar o login dele:
+`https://bot.riseverse.com.br/kontrul-editor/gerador/`, para reaproveitar o login dele:
 
 1. O Editor grava o cookie `kontrul_session` com `Path=/kontrul-editor` (HttpOnly, assinado, 12 h). Como o app fica abaixo desse caminho, o navegador envia o mesmo cookie.
 2. O nginx do app (`studio-web`) consulta `GET /v1/auth/check` na API do Editor (`kontrul-editor-api-1`, rede `kontrul-editor_default`) a cada requisição: `204` libera, `401` bloqueia.
 3. Sem sessão, páginas redirecionam para `/kontrul-editor/` (tela de login do Editor) e chamadas `/api` respondem `401` em JSON. Depois de entrar no Editor, abra o gerador de novo.
 4. Nenhuma alteração no Editor é necessária; o usuário e a senha continuam sendo os dele.
 
-**Rota no nginx da VPS** (acrescentar ao `server` que já publica `/kontrul-editor/`; vale o prefixo mais longo):
+Fluxo: abra `https://bot.riseverse.com.br/kontrul-editor/`, faça login e depois abra `https://bot.riseverse.com.br/kontrul-editor/gerador/` (a sessão dura 12 h).
+
+**Rota no nginx da VPS** — já aplicada. A VPS é `root@rises_server` (`srv749296`, ZeroTier `10.241.168.99`) e o nginx roda no contêiner `routes_rises_nginx`, com a configuração em `/home/riseverse_user/balancer_rises/prd/nginx/conf.d/bot.riseverse.conf` (o backup anterior fica ao lado, como `bot.riseverse.conf.bak-<data>`). A rota foi acrescentada ao `server` de `bot.riseverse.com.br`, junto da do Editor (vale o prefixo mais longo):
 ```nginx
 location /kontrul-editor/gerador/ {
     proxy_pass http://10.241.168.46:8795/;      # a barra final remove o prefixo; o app aceita com ou sem ele
@@ -118,7 +120,7 @@ location /kontrul-editor/gerador/ {
     proxy_send_timeout 600s;
 }
 ```
-Depois: `nginx -t && systemctl reload nginx` na VPS.
+Para alterar: edite o arquivo e rode `docker exec routes_rises_nginx nginx -t && docker exec routes_rises_nginx nginx -s reload` na VPS (a recarga não derruba as outras aplicações).
 
 **Portas no `rises`**
 | Porta | Acesso | Uso |
