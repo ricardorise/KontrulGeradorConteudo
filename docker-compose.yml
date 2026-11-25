@@ -17,14 +17,22 @@ services:
     networks: [kontrul_core]
 
   studio-web:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_BASE: ${STUDIO_BASE_PATH:-/kontrul-editor/gerador/}   # prefixo em que o app é servido (igual ao do Editor)
     restart: unless-stopped
     depends_on: [studio-api]
     environment:
       STUDIO_API_KEY: ${STUDIO_API_KEY:-}
+      STUDIO_BASE_PATH: ${STUDIO_BASE_PATH:-/kontrul-editor/gerador/}
+      # Login: reaproveita o do KontrulEditor (auth_request na API dele; contêiner pelo nome, que é único)
+      STUDIO_AUTH_URL: ${STUDIO_AUTH_URL:-http://kontrul-editor-api-1:8000/v1/auth/check}
+      STUDIO_LOGIN_URL: ${STUDIO_LOGIN_URL:-/kontrul-editor/}
     ports:
-      - "${STUDIO_WEB_BIND:-127.0.0.1}:${STUDIO_WEB_PORT:-8795}:80"
-    networks: [kontrul_core]
+      - "${STUDIO_WEB_BIND:-127.0.0.1}:${STUDIO_WEB_PORT:-8795}:80"   # protegida pelo login do Editor (alvo do proxy da VPS)
+      - "127.0.0.1:${STUDIO_ADMIN_PORT:-8796}:8081"                    # sem login, só no próprio servidor
+    networks: [kontrul_core, kontrul_editor]
 
 volumes:
   studio-media:
@@ -32,3 +40,6 @@ volumes:
 networks:
   kontrul_core:
     external: true
+  kontrul_editor:
+    external: true
+    name: kontrul-editor_default   # rede do KontrulEditor, para validar o login

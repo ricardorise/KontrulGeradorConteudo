@@ -1,3 +1,4 @@
+import { apiUrl } from './base'
 import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
 
 export class ApiError extends Error {}
@@ -12,7 +13,7 @@ export interface MixOptions {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(apiUrl(path), {
     ...init,
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   })
@@ -113,13 +114,13 @@ export const api = {
     const form = new FormData() // multipart: o navegador define o Content-Type com o boundary
     form.append('kind', kind)
     form.append('file', file)
-    const response = await fetch('/api/render-assets', { method: 'POST', body: form })
+    const response = await fetch(apiUrl('/render-assets'), { method: 'POST', body: form })
     const body = await response.json().catch(() => ({}))
     if (!response.ok) throw new ApiError(typeof body.detail === 'string' ? body.detail : `Erro ${response.status}`)
     return body as RenderAsset
   },
   deleteRenderAsset: async (id: string) => {
-    await fetch(`/api/render-assets/${id}`, { method: 'DELETE' })
+    await fetch(apiUrl(`/render-assets/${id}`), { method: 'DELETE' })
   },
   listRenders: (scriptId: string) => request<Render[]>(`/scripts/${scriptId}/renders?limit=5`),
   getRender: (id: string) => request<Render>(`/renders/${id}`),
@@ -129,7 +130,7 @@ export const api = {
   setGuidelineActive: (id: string, active: boolean) =>
     request<Guideline>(`/guidelines/${id}`, { method: 'PATCH', body: JSON.stringify({ active }) }),
   deleteGuideline: async (id: string) => {
-    await fetch(`/api/guidelines/${id}`, { method: 'DELETE' })
+    await fetch(apiUrl(`/guidelines/${id}`), { method: 'DELETE' })
   },
 }
 

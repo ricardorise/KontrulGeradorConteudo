@@ -61,6 +61,39 @@ docker compose up -d --build
 - `studio-web`: nginx com o frontend e proxy de `/api` (injeta `X-API-Key`, aceita uploads de até 2 GB). Porta padrão `127.0.0.1:8795`.
 - Ambos entram na rede `kontrul_core` para alcançar o PostgreSQL pelo nome `postgres`.
 
+## Implantação no servidor `rises`
+
+Instalado junto dos demais projetos, em **`/mnt/build/projects/KontrulGeradorConteudo`** (também visível como `/home/rises/projects/...`), a partir do GitHub, com Docker Compose.
+
+| Item | Valor |
+|---|---|
+| Contêineres | `kontrulgeradorconteudo-studio-api-1` e `kontrulgeradorconteudo-studio-web-1` |
+| Endereço | `http://10.241.168.46:8795` (rede local) |
+| Rede | `kontrul_core` (alcança o PostgreSQL como `postgres`) |
+| Dados | volume Docker `kontrulgeradorconteudo_studio-media` (vinhetas, trilhas, backgrounds e vídeos montados) |
+| Segredos | `.env` na pasta do projeto (permissão `600`, fora do git): senha do banco e `STUDIO_API_KEY` |
+| Início automático | `restart: unless-stopped` + serviço `docker` habilitado no boot: sobem sozinhos com o Ubuntu |
+
+**Atualizar para uma nova versão**
+```bash
+ssh rises@rises
+cd /mnt/build/projects/KontrulGeradorConteudo
+git pull && docker compose up -d --build     # as migrações do banco são aplicadas ao subir
+```
+
+**Operar**
+```bash
+docker compose ps                  # estado
+docker compose logs -f studio-api  # log do backend
+docker compose restart studio-api
+docker compose down                # para (os dados do volume e do banco permanecem)
+```
+
+**Observações**
+- O backend chama o Hermes por SSH usando a mesma chave do `kontrul-api` (`/mnt/build/projects/kontrul/secrets/ssh`, somente leitura) e fala com o ComfyUI em `http://10.241.168.46:8188`.
+- Se o banco ainda não estiver pronto quando o servidor liga, o backend reinicia sozinho até conseguir conectar.
+- O banco é o mesmo do ambiente de desenvolvimento: os arquivos de mídia **não** são. Um arquivo enviado só existe no ambiente onde foi enviado.
+
 ## Limitações conhecidas
 
 - **YouTube bloqueia o IP do servidor** para transcrições (pausa de ~15 min): a Lumière devolve cenas sem horário ou falha; use **Rebuscar B-roll**.

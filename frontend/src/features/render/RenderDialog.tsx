@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
+import { apiUrl } from '../../api/base'
 import type { Render, RenderAsset, RenderPreview, VignetteKind } from '../../api/types'
 import { usePolling } from '../../hooks/usePolling'
 import { VignettePicker, formatSeconds } from './VignettePicker'
@@ -11,7 +12,7 @@ interface Props {
 }
 
 const active = (r: Render) => r.status === 'pending' || r.status === 'running'
-export const videoUrl = (id: string, download = false) => `/api/renders/${id}/video${download ? '?download=true' : ''}`
+export const videoUrl = (id: string, download = false) => apiUrl(`/renders/${id}/video${download ? '?download=true' : ''}`)
 
 const remembered = (kind: VignetteKind): string | null => {
   try {

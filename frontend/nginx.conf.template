@@ -1,16 +1,53 @@
+# Variáveis (envsubst): STUDIO_API_KEY, STUDIO_BASE_PATH, STUDIO_AUTH_URL, STUDIO_LOGIN_URL.
+#
+# Porta 80: protegida pelo login do KontrulEditor (auth_request na API dele; o cookie `kontrul_session` é
+# enviado pelo navegador porque o app é servido sob o mesmo prefixo do Editor, ex.: /kontrul-editor/gerador/).
+resolver 127.0.0.11 valid=10s;
+
 server {
     listen 80;
     root /usr/share/nginx/html;
     index index.html;
-
     client_max_body_size 2g;  # uploads de vinhetas, trilha e background
 
+    # O proxy da VPS pode ou não tirar o prefixo: aceita os dois.
+    rewrite ^${STUDIO_BASE_PATH}(.*)$ /$1 last;
+
+    auth_request /_auth;
+    error_page 401 = @login;
+
+    location = /_auth {
+        internal;
+        set $auth_upstream ${STUDIO_AUTH_URL};
+        proxy_pass $auth_upstream;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    }
+
+    location @login {
+        return 302 ${STUDIO_LOGIN_URL};   # tela de login do Editor
+    }
+
+    location = /health {
+        auth_request off;
+        default_type text/plain;
+        return 200 "ok";
+    }
+
     location /api/ {
+        error_page 401 = @api_unauthorized;
         proxy_pass http://studio-api:8100;
         proxy_set_header X-API-Key "${STUDIO_API_KEY}";
         proxy_set_header Host $host;
         proxy_read_timeout 600s;
         proxy_request_buffering off;
+    }
+
+    location @api_unauthorized {
+        default_type application/json;
+        return 401 '{"detail":"Sessão expirada. Entre pelo Kontrul Editor e recarregue a página."}';
     }
 
     location / {
