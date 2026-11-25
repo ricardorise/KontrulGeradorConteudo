@@ -94,6 +94,41 @@ docker compose down                # para (os dados do volume e do banco permane
 - Se o banco ainda não estiver pronto quando o servidor liga, o backend reinicia sozinho até conseguir conectar.
 - O banco é o mesmo do ambiente de desenvolvimento: os arquivos de mídia **não** são. Um arquivo enviado só existe no ambiente onde foi enviado.
 
+## Acesso pela VPS (VPN) com o login do KontrulEditor
+
+A VPS alcança o `rises` pela VPN ZeroTier (`10.241.168.46`). O app é publicado **sob o mesmo prefixo do Editor**, em
+`https://<dominio-da-vps>/kontrul-editor/gerador/`, para reaproveitar o login dele:
+
+1. O Editor grava o cookie `kontrul_session` com `Path=/kontrul-editor` (HttpOnly, assinado, 12 h). Como o app fica abaixo desse caminho, o navegador envia o mesmo cookie.
+2. O nginx do app (`studio-web`) consulta `GET /v1/auth/check` na API do Editor (`kontrul-editor-api-1`, rede `kontrul-editor_default`) a cada requisição: `204` libera, `401` bloqueia.
+3. Sem sessão, páginas redirecionam para `/kontrul-editor/` (tela de login do Editor) e chamadas `/api` respondem `401` em JSON. Depois de entrar no Editor, abra o gerador de novo.
+4. Nenhuma alteração no Editor é necessária; o usuário e a senha continuam sendo os dele.
+
+**Rota no nginx da VPS** (acrescentar ao `server` que já publica `/kontrul-editor/`; vale o prefixo mais longo):
+```nginx
+location /kontrul-editor/gerador/ {
+    proxy_pass http://10.241.168.46:8795/;      # a barra final remove o prefixo; o app aceita com ou sem ele
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 2g;                     # uploads de vídeo/áudio
+    proxy_request_buffering off;
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+}
+```
+Depois: `nginx -t && systemctl reload nginx` na VPS.
+
+**Portas no `rises`**
+| Porta | Acesso | Uso |
+|---|---|---|
+| `10.241.168.46:8795` | exige o login do Editor | alvo do proxy da VPS |
+| `127.0.0.1:8796` | **sem** login, só no servidor | administração/diagnóstico (`ssh -L 8796:127.0.0.1:8796 …`) |
+
+**Variáveis** (`.env` do servidor): `STUDIO_BASE_PATH` (padrão `/kontrul-editor/gerador/`, também embutido no build do frontend), `STUDIO_LOGIN_URL` (`/kontrul-editor/`) e `STUDIO_AUTH_URL`.
+Se o Editor estiver fora do ar, a validação falha e o acesso ao app fica bloqueado até ele voltar; a porta administrativa continua funcionando.
+
 ## Limitações conhecidas
 
 - **YouTube bloqueia o IP do servidor** para transcrições (pausa de ~15 min): a Lumière devolve cenas sem horário ou falha; use **Rebuscar B-roll**.

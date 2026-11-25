@@ -9,6 +9,7 @@ server {
     root /usr/share/nginx/html;
     index index.html;
     client_max_body_size 2g;  # uploads de vinhetas, trilha e background
+    absolute_redirect off;    # redirecionamentos relativos: atrás do HTTPS da VPS não podem virar http://host
 
     # O proxy da VPS pode ou não tirar o prefixo: aceita os dois.
     rewrite ^${STUDIO_BASE_PATH}(.*)$ /$1 last;
