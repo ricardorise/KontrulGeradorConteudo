@@ -41,9 +41,9 @@ class PostgresScriptRepository:
             )
             await conn.executemany(
                 f"INSERT INTO {T}.broll_suggestions (id, paragraph_id, position, video_url, video_id, "
-                "start_seconds, title, description, justification) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+                "start_seconds, title, description, justification, source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
                 [
-                    (b.id, p.id, i, b.video_url, b.video_id, b.start_seconds, b.title, b.description, b.justification)
+                    (b.id, p.id, i, b.video_url, b.video_id, b.start_seconds, b.title, b.description, b.justification, b.source)
                     for p in script.paragraphs
                     for i, b in enumerate(p.broll)
                 ],
@@ -58,6 +58,24 @@ class PostgresScriptRepository:
             f"SELECT * FROM {T}.scripts WHERE news_item_id=$1 ORDER BY created_at DESC LIMIT 1", news_item_id
         )
         return await self._hydrate(row) if row else None
+
+    async def add_broll(self, paragraph_id: UUID, b: BrollSuggestion) -> None:
+        await self._pool.execute(
+            f"INSERT INTO {T}.broll_suggestions (id, paragraph_id, position, video_url, video_id, start_seconds, title, "
+            f"description, justification, source) VALUES ($1,$2,(SELECT COALESCE(MAX(position)+1,0) FROM {T}.broll_suggestions "
+            "WHERE paragraph_id=$2),$3,$4,$5,$6,$7,$8,$9)",
+            b.id, paragraph_id, b.video_url, b.video_id, b.start_seconds, b.title, b.description, b.justification, b.source,
+        )  # fmt: skip
+
+    async def update_broll(self, b: BrollSuggestion) -> None:
+        await self._pool.execute(
+            f"UPDATE {T}.broll_suggestions SET video_url=$2, video_id=$3, start_seconds=$4, title=$5, description=$6, "
+            "justification=$7, source=$8 WHERE id=$1",
+            b.id, b.video_url, b.video_id, b.start_seconds, b.title, b.description, b.justification, b.source,
+        )  # fmt: skip
+
+    async def delete_broll(self, broll_id: UUID) -> None:
+        await self._pool.execute(f"DELETE FROM {T}.broll_suggestions WHERE id=$1", broll_id)
 
     async def add_cut(self, script_id: UUID, cut: Cut) -> None:
         ex = cut.excerpt
@@ -122,7 +140,7 @@ class PostgresScriptRepository:
                 BrollSuggestion(
                     id=b["id"], video_url=b["video_url"], video_id=b["video_id"],
                     description=b["description"], start_seconds=b["start_seconds"],
-                    title=b["title"], justification=b["justification"],
+                    title=b["title"], justification=b["justification"], source=b["source"],
                 )  # fmt: skip
             )
         cut_rows = await self._pool.fetch(

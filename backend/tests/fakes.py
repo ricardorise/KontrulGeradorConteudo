@@ -83,6 +83,15 @@ class MemoryScriptRepo:
         matches = [s for s in self.data.values() if s.news_item_id == news_item_id]
         return max(matches, key=lambda s: s.created_at, default=None)
 
+    async def add_broll(self, paragraph_id, suggestion) -> None:
+        pass  # o agregado em memória já guarda as sugestões
+
+    async def update_broll(self, suggestion) -> None:
+        pass
+
+    async def delete_broll(self, broll_id) -> None:
+        pass
+
     async def add_cut(self, script_id, cut) -> None:
         pass  # o agregado em memória já guarda os cortes
 

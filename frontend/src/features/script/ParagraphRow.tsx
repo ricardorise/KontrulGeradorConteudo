@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { Broll, Cut, JobStatus, Paragraph } from '../../api/types'
 import { BrollCard } from './BrollCard'
+import { BrollUrlForm } from './BrollUrlForm'
 import { buildSegments, overlaps, rangeFromSelection, type TextRange } from './textSelection'
 import { formatClock } from './timeline'
 
@@ -11,9 +12,24 @@ interface Props {
   onAddCut: (paragraphId: string, broll: Broll, start: number, end: number, text: TextRange | null) => Promise<void>
   onDeleteCut: (cutId: string) => void
   onSetCutExcerpt: (cutId: string, range: TextRange) => Promise<void>
+  // B-roll escolhido por você / rebusca seletiva (opcionais)
+  onAddBroll?: (paragraphId: string, url: string) => Promise<void>
+  onReplaceBroll?: (brollId: string, url: string) => Promise<void>
+  onRemoveBroll?: (brollId: string) => void
+  onRetryParagraph?: (paragraphId: string) => void
+  retryDisabled?: boolean
+  selecting?: boolean // modo "escolher parágrafos para rebuscar"
+  selected?: boolean
+  onToggleSelect?: (paragraphId: string) => void
+  autoOpenBrollId?: string | null
 }
 
-export function ParagraphRow({ paragraph, brollStatus, cuts, onAddCut, onDeleteCut, onSetCutExcerpt }: Props) {
+export function ParagraphRow({
+  paragraph, brollStatus, cuts, onAddCut, onDeleteCut, onSetCutExcerpt,
+  onAddBroll, onReplaceBroll, onRemoveBroll, onRetryParagraph, retryDisabled = false,
+  selecting = false, selected = false, onToggleSelect, autoOpenBrollId = null,
+}: Props) {  // fmt: skip
+  const [adding, setAdding] = useState(false)
   const searching = brollStatus === 'running' || brollStatus === 'pending'
   const body = useRef<HTMLSpanElement>(null)
   const [pending, setPending] = useState<TextRange | null>(null)
@@ -85,10 +101,52 @@ export function ParagraphRow({ paragraph, brollStatus, cuts, onAddCut, onDeleteC
         )}
       </div>
       <div className="broll-column" aria-label={`B-roll do parágrafo ${paragraph.position + 1}`}>
+        {(onAddBroll || onRetryParagraph || selecting) && (
+          <div className="broll-toolbar">
+            {selecting ? (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  aria-label={`Rebuscar o parágrafo ${paragraph.position + 1}`}
+                  onChange={() => onToggleSelect?.(paragraph.id)}
+                />
+                Rebuscar este parágrafo
+              </label>
+            ) : (
+              onRetryParagraph && (
+                <button
+                  className="secondary small"
+                  disabled={retryDisabled}
+                  title="Rebusca só este parágrafo; os vídeos que você escolheu ficam"
+                  onClick={() => onRetryParagraph(paragraph.id)}
+                >
+                  ↻ Rebuscar este
+                </button>
+              )
+            )}
+            {onAddBroll && (
+              <button className="secondary small" onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
+                + Adicionar vídeo
+              </button>
+            )}
+          </div>
+        )}
+        {adding && onAddBroll && (
+          <BrollUrlForm
+            label="Link do vídeo para este parágrafo"
+            submitLabel="Adicionar"
+            onSubmit={(url) => onAddBroll(paragraph.id, url)}
+            onCancel={() => setAdding(false)}
+          />
+        )}
         {paragraph.broll.map((b) => (
           <BrollCard
             key={b.id}
             broll={b}
+            defaultOpen={b.id === autoOpenBrollId}
+            onReplace={onReplaceBroll}
+            onRemove={onRemoveBroll}
             excerptText={pendingText}
             onAddCut={async (broll, start, end) => {
               await onAddCut(paragraph.id, broll, start, end, pending)

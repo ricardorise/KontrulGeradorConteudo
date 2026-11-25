@@ -43,7 +43,13 @@ export const api = {
     post<Script>(`/news-items/${newsItemId}/script${force ? '?force=true' : ''}`),
   getLatestScript: (newsItemId: string) => request<Script | null>(`/news-items/${newsItemId}/script`),
   getScript: (id: string) => request<Script>(`/scripts/${id}`),
-  retryBroll: (id: string) => post<Script>(`/scripts/${id}/broll`),
+  retryBroll: (id: string, paragraphIds?: string[]) =>
+    post<Script>(`/scripts/${id}/broll`, paragraphIds?.length ? { paragraph_ids: paragraphIds } : undefined),
+  addBroll: (scriptId: string, paragraphId: string, videoUrl: string) =>
+    post<Script>(`/scripts/${scriptId}/paragraphs/${paragraphId}/broll`, { video_url: videoUrl }),
+  replaceBroll: (scriptId: string, brollId: string, videoUrl: string) =>
+    request<Script>(`/scripts/${scriptId}/broll/${brollId}`, { method: 'PUT', body: JSON.stringify({ video_url: videoUrl }) }),
+  removeBroll: (scriptId: string, brollId: string) => request<Script>(`/scripts/${scriptId}/broll/${brollId}`, { method: 'DELETE' }),
   addCut: (
     scriptId: string,
     cut: { paragraph_id: string; video_url: string; start_seconds: number; end_seconds: number; video_title: string | null; text_start?: number; text_end?: number },

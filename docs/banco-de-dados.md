@@ -36,6 +36,7 @@ Verificado: aplicar todas as migrações num banco vazio gera as 13 tabelas abai
 | `009_render_volumes` | Volumes, nivelamento, vídeo da fala guardado (remix) |
 | `010_asset_loudness` | Nível médio do áudio (detecta faixa muda) |
 | `011_music_stage_volumes` | Nível do áudio de fundo por etapa |
+| `012_broll_source` | Origem de cada sugestão de B-roll (`lumiere` ou `manual`) |
 
 ## Tabelas (`content_studio`)
 
@@ -59,7 +60,7 @@ erDiagram
 | `news_items` | Título, resumo, `details` (fatos), fonte, data, `radar` (análise) |
 | `scripts` | Título, estado do roteiro e do B-roll, erros, instruções |
 | `script_paragraphs` | Texto e posição de cada parágrafo |
-| `broll_suggestions` | Cenas sugeridas: URL, `video_id`, início, descrição, justificativa |
+| `broll_suggestions` | Cenas: URL, `video_id`, início, descrição, justificativa e `source` (`lumiere` = automática, `manual` = escolhida pelo editor) |
 | `script_cuts` | Cortes do editor: vídeo, início/fim (s), título, `excerpt_id` |
 | `paragraph_excerpts` | Trecho (offsets e texto) do parágrafo ligado a um corte; único por corte |
 | `render_assets` | Uploads: tipo (`intro/outro/music/background`), arquivo, duração, resolução, áudio, nível dB |

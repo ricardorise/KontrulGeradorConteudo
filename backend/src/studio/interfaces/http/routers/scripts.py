@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from studio.interfaces.http.container import UseCases
 from studio.shared.domain.errors import InvalidInput
 from studio.interfaces.http.deps import use_cases
-from studio.interfaces.http.schemas import CutExcerptIn, CutIn, ScriptIn, ScriptOut
+from studio.interfaces.http.schemas import BrollIn, BrollRetryIn, CutExcerptIn, CutIn, ScriptIn, ScriptOut
 
 router = APIRouter(tags=["scripts"])
 UC = Annotated[UseCases, Depends(use_cases)]
@@ -33,8 +33,26 @@ async def get_script(script_id: UUID, uc: UC) -> ScriptOut:
 
 
 @router.post("/scripts/{script_id}/broll", response_model=ScriptOut, status_code=202)
-async def retry_broll(script_id: UUID, uc: UC, body: ScriptIn | None = None) -> ScriptOut:
-    return ScriptOut.of(await uc.retry_broll(script_id, body.instructions if body else None))
+async def retry_broll(script_id: UUID, uc: UC, body: BrollRetryIn | None = None) -> ScriptOut:
+    """Rebusca o B-roll de todos os parágrafos ou só dos `paragraph_ids`; o que o editor escolheu é preservado."""
+    return ScriptOut.of(await uc.retry_broll(script_id, body.instructions if body else None, body.paragraph_ids if body else None))
+
+
+@router.post("/scripts/{script_id}/paragraphs/{paragraph_id}/broll", response_model=ScriptOut, status_code=201)
+async def add_broll(script_id: UUID, paragraph_id: UUID, body: BrollIn, uc: UC) -> ScriptOut:
+    """Insere um vídeo do YouTube escolhido pelo editor no parágrafo."""
+    return ScriptOut.of(await uc.add_broll(script_id, paragraph_id, body.video_url))
+
+
+@router.put("/scripts/{script_id}/broll/{broll_id}", response_model=ScriptOut)
+async def replace_broll(script_id: UUID, broll_id: UUID, body: BrollIn, uc: UC) -> ScriptOut:
+    """Troca o vídeo de uma sugestão por outro link do YouTube."""
+    return ScriptOut.of(await uc.replace_broll(script_id, broll_id, body.video_url))
+
+
+@router.delete("/scripts/{script_id}/broll/{broll_id}", response_model=ScriptOut)
+async def remove_broll(script_id: UUID, broll_id: UUID, uc: UC) -> ScriptOut:
+    return ScriptOut.of(await uc.remove_broll(script_id, broll_id))
 
 
 @router.post("/scripts/{script_id}/cuts", response_model=ScriptOut, status_code=201)

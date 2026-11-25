@@ -19,7 +19,18 @@ from studio.rendering.application.use_cases import (
     StartRender,
     UploadRenderAsset,
 )
-from studio.scripting.application.use_cases import AddCut, DeleteCut, GetLatestScript, GetScript, SetCutExcerpt, RetryBroll, StartScriptGeneration
+from studio.scripting.application.use_cases import (
+    AddBroll,
+    AddCut,
+    DeleteCut,
+    GetLatestScript,
+    GetScript,
+    RemoveBroll,
+    ReplaceBroll,
+    RetryBroll,
+    SetCutExcerpt,
+    StartScriptGeneration,
+)
 
 
 @dataclass(frozen=True)
@@ -31,6 +42,9 @@ class UseCases:
     get_script: GetScript
     get_latest_script: GetLatestScript
     retry_broll: RetryBroll
+    add_broll: AddBroll
+    replace_broll: ReplaceBroll
+    remove_broll: RemoveBroll
     add_cut: AddCut
     delete_cut: DeleteCut
     set_cut_excerpt: SetCutExcerpt

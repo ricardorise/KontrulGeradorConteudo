@@ -27,7 +27,16 @@ Se o tema contiver a palavra **"radar"**, aparecem as configurações do Radar:
 
 - Logo após o roteiro, a **Lumière** busca cenas no YouTube, de 1 a 2 por parágrafo, e cada parágrafo aparece com suas cenas **ao lado**.
 - Só entram links reais do YouTube (validados); cenas sem horário confirmado vêm apenas com o link do vídeo.
-- **Rebuscar B-roll** repete só essa etapa (também aceita instruções pelo chat, ex.: "prefira reviews").
+- **Escolher você mesmo o vídeo.** Em cada parágrafo:
+  - **+ Adicionar vídeo**: cole um link do YouTube (aceita `&t=90` para começar num instante). O app busca o título e o vídeo já abre no player para você **recortar**.
+  - **Trocar vídeo** (em qualquer cartão): substitui o vídeo da sugestão pelo link que você colar, mantendo o lugar, e abre o player para recortar. Cortes já feitos no vídeo antigo continuam válidos.
+  - **Remover**: tira o vídeo do parágrafo.
+  Os vídeos escolhidos por você ganham o selo **escolhido por você** e **nunca são apagados** por uma nova busca.
+- **Rebuscar sem perder o que está bom** (também aceita instruções pelo chat, ex.: "prefira reviews"):
+  - **↻ Rebuscar este** (em cada parágrafo): busca de novo só aquele parágrafo.
+  - **Escolher parágrafos para rebuscar**: marque vários, depois **Rebuscar selecionados (N)** (há **Marcar todos**).
+  - **Rebuscar todos**: refaz o B-roll de todos os parágrafos.
+  A busca **não apaga nada antes**: só troca as sugestões automáticas de um parágrafo quando a Lumière traz cenas novas para ele (se não trouxer, as atuais ficam). Ela recebe a lista dos vídeos já usados para não repetir.
 - Limitação conhecida: o YouTube pode bloquear o IP do servidor para ler transcrições; nesse caso as cenas vêm sem horário ou o B-roll fica como falho e pode ser refeito.
 
 ## 4. Cortes: player, timeline e trecho do texto

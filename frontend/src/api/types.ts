@@ -70,6 +70,7 @@ export interface Broll {
   title: string | null
   description: string
   justification: string | null
+  source: 'lumiere' | 'manual' // manual = escolhido por você; sobrevive a "rebuscar"
 }
 
 export interface Paragraph {

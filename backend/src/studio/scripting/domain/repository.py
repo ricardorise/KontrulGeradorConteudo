@@ -1,7 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from studio.scripting.domain.script import Cut, Script
+from studio.scripting.domain.script import BrollSuggestion, Cut, Script
 
 
 class ScriptRepository(Protocol):
@@ -12,6 +12,12 @@ class ScriptRepository(Protocol):
     async def get(self, script_id: UUID) -> Script | None: ...
 
     async def get_latest_for_news_item(self, news_item_id: UUID) -> Script | None: ...
+
+    async def add_broll(self, paragraph_id: UUID, suggestion: BrollSuggestion) -> None: ...
+
+    async def update_broll(self, suggestion: BrollSuggestion) -> None: ...
+
+    async def delete_broll(self, broll_id: UUID) -> None: ...
 
     async def add_cut(self, script_id: UUID, cut: Cut) -> None: ...
 

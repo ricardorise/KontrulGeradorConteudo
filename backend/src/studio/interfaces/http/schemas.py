@@ -64,6 +64,7 @@ class BrollOut(BaseModel):
     title: str | None
     description: str
     justification: str | None
+    source: str  # lumiere | manual
 
     @classmethod
     def of(cls, b: BrollSuggestion) -> "BrollOut":
@@ -146,6 +147,15 @@ class ScriptOut(BaseModel):
 
 class ScriptIn(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
+
+
+class BrollRetryIn(BaseModel):
+    instructions: str | None = Field(default=None, max_length=1000)
+    paragraph_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=100)  # vazio/ausente = todos
+
+
+class BrollIn(BaseModel):
+    video_url: str = Field(min_length=1, max_length=300)  # link do YouTube escolhido pelo editor
 
 
 class ConversationIn(BaseModel):

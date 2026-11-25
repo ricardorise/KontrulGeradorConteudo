@@ -59,6 +59,27 @@ class BrollSuggestion:
     start_seconds: int | None = None
     title: str | None = None
     justification: str | None = None
+    source: str = "lumiere"  # "lumiere" (automática) ou "manual" (escolhida pelo editor)
+
+    @property
+    def is_manual(self) -> bool:
+        return self.source == "manual"
+
+    @classmethod
+    def manual(
+        cls, url: str, title: str | None = None, description: str | None = None, keep_id: UUID | None = None
+    ) -> "BrollSuggestion":
+        """Vídeo escolhido pelo editor (colado como link do YouTube)."""
+        parsed = parse_youtube_url(url)
+        if parsed is None:
+            raise InvalidInput("Cole um link válido de vídeo do YouTube (youtube.com/watch?v=… ou youtu.be/…).")
+        video_id, start = parsed
+        title = (title or "").strip() or None
+        return cls(
+            id=keep_id or uuid4(), video_url=f"https://youtu.be/{video_id}" + (f"?t={start}" if start is not None else ""),
+            video_id=video_id, description=(description or "").strip() or title or "Vídeo escolhido por você",
+            start_seconds=start, title=title, justification="Escolhido manualmente", source="manual",
+        )  # fmt: skip
 
     @classmethod
     def from_scene(
@@ -87,6 +108,7 @@ class BrollSuggestion:
 
 MIN_CUT_SECONDS = 0.5
 MAX_CUTS = 100
+MAX_BROLL_PER_PARAGRAPH = 12
 
 
 @dataclass(frozen=True)
@@ -237,19 +259,74 @@ class Script:
             raise NotFound("Corte não encontrado.")
         self.cuts = [c for c in self.cuts if c.id != cut_id]
 
-    def begin_broll(self) -> None:
+    # ---- B-roll escolhido pelo editor ----
+    def _paragraph(self, paragraph_id: UUID) -> Paragraph:
+        found = next((p for p in self.paragraphs if p.id == paragraph_id), None)
+        if found is None:
+            raise NotFound("Parágrafo não pertence a este roteiro.")
+        return found
+
+    def add_manual_broll(self, paragraph_id: UUID, url: str, title: str | None = None) -> BrollSuggestion:
+        paragraph = self._paragraph(paragraph_id)
+        suggestion = BrollSuggestion.manual(url, title)
+        if any(b.video_url == suggestion.video_url for b in paragraph.broll):
+            raise Conflict("Este vídeo já está neste parágrafo.")
+        if len(paragraph.broll) >= MAX_BROLL_PER_PARAGRAPH:
+            raise Conflict(f"Limite de {MAX_BROLL_PER_PARAGRAPH} vídeos por parágrafo.")
+        paragraph.broll.append(suggestion)
+        return suggestion
+
+    def _find_broll(self, broll_id: UUID) -> tuple[Paragraph, int]:
+        for paragraph in self.paragraphs:
+            for index, item in enumerate(paragraph.broll):
+                if item.id == broll_id:
+                    return paragraph, index
+        raise NotFound("Vídeo não encontrado neste roteiro.")
+
+    def replace_broll(self, broll_id: UUID, url: str, title: str | None = None) -> BrollSuggestion:
+        """Troca o vídeo de uma sugestão (mantém o lugar e o id); passa a contar como escolhida pelo editor."""
+        paragraph, index = self._find_broll(broll_id)
+        suggestion = BrollSuggestion.manual(url, title, keep_id=broll_id)
+        if any(b.video_url == suggestion.video_url and b.id != broll_id for b in paragraph.broll):
+            raise Conflict("Este vídeo já está neste parágrafo.")
+        paragraph.broll[index] = suggestion
+        return suggestion
+
+    def remove_broll(self, broll_id: UUID) -> None:
+        paragraph, index = self._find_broll(broll_id)
+        del paragraph.broll[index]
+
+    def used_video_ids(self) -> list[str]:
+        return sorted({b.video_id for p in self.paragraphs for b in p.broll})
+
+    def begin_broll(self, paragraph_ids: set[UUID] | None = None) -> list[Paragraph]:
+        """Inicia a (re)busca; devolve os parágrafos-alvo (todos ou só os escolhidos).
+
+        Não apaga nada: as sugestões atuais só são trocadas quando houver cenas novas.
+        """
         if self.status is not JobStatus.DONE:
             raise Conflict("O roteiro ainda não está pronto para buscar B-roll.")
         if self.broll_status is JobStatus.RUNNING:
             raise Conflict("A busca de B-roll já está em andamento.")
-        for paragraph in self.paragraphs:
-            paragraph.broll = []
+        targets = list(self.paragraphs)
+        if paragraph_ids is not None:
+            unknown = paragraph_ids - {p.id for p in self.paragraphs}
+            if unknown or not paragraph_ids:
+                raise InvalidInput("Escolha ao menos um parágrafo deste roteiro para rebuscar.")
+            targets = [p for p in self.paragraphs if p.id in paragraph_ids]
         self.broll_status = JobStatus.RUNNING
         self.broll_error = None
+        return targets
 
-    def complete_broll(self, scenes: dict[int, list[BrollSuggestion]]) -> None:
+    def complete_broll(self, scenes: dict[int, list[BrollSuggestion]], targets: set[int] | None = None) -> None:
+        """Aplica as cenas novas aos parágrafos-alvo: as escolhidas pelo editor ficam; as automáticas são trocadas
+        quando há cena nova (sem cena nova, as atuais permanecem)."""
         for paragraph in self.paragraphs:
-            paragraph.broll = scenes.get(paragraph.position, [])
+            if targets is not None and paragraph.position not in targets:
+                continue
+            fresh = scenes.get(paragraph.position)
+            if fresh:
+                paragraph.broll = [b for b in paragraph.broll if b.is_manual] + fresh
         self.broll_status = JobStatus.DONE
 
     def fail_broll(self, error: str) -> None:

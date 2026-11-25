@@ -247,3 +247,12 @@ mark.excerpt.linked { background: rgba(91, 140, 255, .28); border-bottom: 2px so
 .music-levels { margin-top: 12px; }
 .own-audio { margin-top: 6px; font-size: 13px; }
 .own-audio summary { cursor: pointer; color: var(--muted); }
+
+/* ---- B-roll escolhido por você / rebusca seletiva ---- */
+.broll-toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+button.small { padding: 3px 8px; font-size: 12px; }
+.broll-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.broll-url-form { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.broll-url-form input { flex: 1 1 220px; min-width: 0; }
+.broll-url-form .error { flex-basis: 100%; margin: 0; font-size: 13px; }
+.badge-manual { align-self: flex-start; color: var(--accent); border-color: var(--accent); }

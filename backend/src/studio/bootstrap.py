@@ -34,6 +34,7 @@ from studio.infrastructure.persistence.render_repository import PostgresRenderJo
 from studio.infrastructure.persistence.render_script_source import ScriptingScriptSourceReader
 from studio.infrastructure.persistence.script_repository import PostgresScriptRepository
 from studio.infrastructure.studio_gateway import StudioUseCaseGateway
+from studio.infrastructure.youtube.oembed import YoutubeOEmbed
 from studio.infrastructure.runtime.background import AsyncioBackgroundRunner
 from studio.interfaces.http.app import build_app
 from studio.interfaces.http.container import UseCases
@@ -52,11 +53,14 @@ from studio.rendering.application.use_cases import (
     resume_active,
 )
 from studio.scripting.application.use_cases import (
+    AddBroll,
     AddCut,
     DeleteCut,
     GetLatestScript,
     GetScript,
     SetCutExcerpt,
+    RemoveBroll,
+    ReplaceBroll,
     RetryBroll,
     ScriptWorkflow,
     StartScriptGeneration,
@@ -99,6 +103,7 @@ def create_app() -> FastAPI:
         finisher = RenderFinisher(render_repo, asset_repo, renderer, media_store, FfmpegVideoComposer(probe, settings.ffmpeg))
         render_monitor = RenderMonitor(render_repo, renderer, settings.comfy_poll_interval_s, finisher=finisher)
         preview_render = PreviewRender(ScriptingScriptSourceReader(script_repo), renderer)
+        video_titles = YoutubeOEmbed()
         guideline_repo = PostgresGuidelineRepository(pool)
         guideline_texts = ActiveGuidelineTexts(guideline_repo)
         add_guideline = AddGuideline(guideline_repo)
@@ -115,6 +120,9 @@ def create_app() -> FastAPI:
             get_script=get_script,
             get_latest_script=GetLatestScript(script_repo),
             retry_broll=retry_broll,
+            add_broll=AddBroll(script_repo, video_titles),
+            replace_broll=ReplaceBroll(script_repo, video_titles),
+            remove_broll=RemoveBroll(script_repo),
             add_cut=AddCut(script_repo),
             delete_cut=DeleteCut(script_repo),
             set_cut_excerpt=SetCutExcerpt(script_repo),

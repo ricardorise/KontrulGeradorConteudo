@@ -21,14 +21,30 @@ Responda SOMENTE com JSON válido (sem markdown, sem texto antes ou depois):
 
 
 def broll_prompt(
-    title: str | None, paragraphs: list[str], guidelines: list[str] | None = None, instructions: str | None = None
+    title: str | None,
+    paragraphs: list[str],
+    guidelines: list[str] | None = None,
+    instructions: str | None = None,
+    indexes: list[int] | None = None,
+    avoid_video_ids: list[str] | None = None,
 ) -> str:
-    numbered = "\n".join(f"[{i}] {text}" for i, text in enumerate(paragraphs))
+    """`indexes` = números originais dos parágrafos quando só alguns são (re)buscados; `avoid_video_ids` = vídeos a não repetir."""
+    numbers = indexes if indexes is not None else list(range(len(paragraphs)))
+    numbered = "\n".join(f"[{n}] {text}" for n, text in zip(numbers, paragraphs, strict=True))
+    extra = ""
+    if indexes is not None:
+        extra += (
+            "\n\nBusque cenas SOMENTE para os parágrafos listados acima (os demais já estão resolvidos). "
+            "Mantenha os números entre colchetes como índice do parágrafo."
+        )
+    if avoid_video_ids:
+        links = ", ".join(f"https://youtu.be/{v}" for v in avoid_video_ids[:60])
+        extra += f"\n\nNÃO repita estes vídeos (já usados ou recusados pelo editor): {links}"
     return f"""Encontre cenas de B-roll no YouTube para ilustrar cada parágrafo do roteiro abaixo{f' ("{title}")' if title else ''}.
 
 --- ROTEIRO ---
 {numbered}
---- FIM DO ROTEIRO ---{render_guidance(guidelines or [], instructions)}
+--- FIM DO ROTEIRO ---{render_guidance(guidelines or [], instructions)}{extra}
 
 Você é Lumière, pesquisadora de B-rolls para o PapoTechCast.
 Encontre 1 a 2 cenas relevantes por parágrafo. Procure o trecho específico que ilustra a ideia, mesmo que esteja no meio de um vídeo longo. Omita parágrafos sem cenas úteis.

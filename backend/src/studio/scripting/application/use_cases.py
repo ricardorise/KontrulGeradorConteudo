@@ -1,4 +1,5 @@
 import logging
+from typing import Protocol
 from uuid import UUID
 
 from studio.scripting.application.parsing import parse_broll, parse_script
@@ -53,19 +54,30 @@ class ScriptWorkflow:
         if script.status is JobStatus.DONE:
             await self.find_broll(script_id)
 
-    async def find_broll(self, script_id: UUID, instructions: str | None = None) -> None:
+    async def find_broll(
+        self, script_id: UUID, instructions: str | None = None, paragraph_ids: list[UUID] | None = None
+    ) -> None:
+        """Busca B-roll para todos os parágrafos ou só para os escolhidos, sem apagar o que já existe."""
         script = await self.repo.get(script_id)
         if script is None or script.broll_status is not JobStatus.RUNNING:
             return
-        texts = [p.text for p in script.paragraphs]
+        wanted = set(paragraph_ids) if paragraph_ids is not None else None
+        targets = [p for p in script.paragraphs if wanted is None or p.id in wanted]
+        subset = None if wanted is None else [p.position for p in targets]
         try:
             rules = await self.guidelines.texts_for(GuidelineScope.BROLL)
-            raw = await self.agents.ask(Bot.LUMIERE, broll_prompt(script.title, texts, rules, instructions))
-            scenes = parse_broll(raw, len(texts))
+            prompt = broll_prompt(
+                script.title, [p.text for p in targets], rules, instructions,
+                indexes=subset, avoid_video_ids=script.used_video_ids(),
+            )  # fmt: skip
+            raw = await self.agents.ask(Bot.LUMIERE, prompt)
+            scenes = parse_broll(raw, len(script.paragraphs), set(subset) if subset is not None else None)
+            # recarrega: o editor pode ter inserido/trocado vídeos enquanto a Lumière pesquisava
+            script = await self.repo.get(script_id) or script
             if scenes:
-                script.complete_broll(scenes)
+                script.complete_broll(scenes, set(subset) if subset is not None else None)
             else:
-                script.fail_broll("A Lumière não encontrou cenas utilizáveis. Tente buscar novamente em alguns minutos.")
+                script.fail_broll("A Lumière não encontrou cenas novas. As sugestões atuais foram mantidas; tente de novo em alguns minutos.")
         except AgentError as exc:
             log.warning("b-roll do roteiro %s falhou: %s", script_id, exc)
             script.fail_broll(str(exc))
@@ -108,13 +120,15 @@ class RetryBroll:
     def __init__(self, workflow: ScriptWorkflow):
         self._wf = workflow
 
-    async def __call__(self, script_id: UUID, instructions: str | None = None) -> Script:
+    async def __call__(
+        self, script_id: UUID, instructions: str | None = None, paragraph_ids: list[UUID] | None = None
+    ) -> Script:
         script = await self._wf.repo.get(script_id)
         if script is None:
             raise NotFound("Roteiro não encontrado.")
-        script.begin_broll()
+        script.begin_broll(set(paragraph_ids) if paragraph_ids is not None else None)
         await self._wf.repo.save(script)
-        self._wf.runner.submit(self._wf.find_broll(script.id, instructions))
+        self._wf.runner.submit(self._wf.find_broll(script.id, instructions, paragraph_ids))
         return script
 
 
@@ -174,3 +188,59 @@ class GetLatestScript:
 
     async def __call__(self, news_item_id: UUID) -> Script | None:
         return await self._repo.get_latest_for_news_item(news_item_id)
+
+
+class VideoTitles(Protocol):
+    """Porta de saída: título público de um vídeo do YouTube (None se não der para obter)."""
+
+    async def title_of(self, video_id: str) -> str | None: ...
+
+
+class AddBroll:
+    """Insere um vídeo escolhido pelo editor (link do YouTube) num parágrafo."""
+
+    def __init__(self, repo: ScriptRepository, titles: VideoTitles):
+        self._repo, self._titles = repo, titles
+
+    async def __call__(self, script_id: UUID, paragraph_id: UUID, url: str) -> Script:
+        script = await self._repo.get(script_id)
+        if script is None:
+            raise NotFound("Roteiro não encontrado.")
+        suggestion = script.add_manual_broll(paragraph_id, url)  # valida o link e as regras
+        title = await self._titles.title_of(suggestion.video_id)
+        if title:
+            script.replace_broll(suggestion.id, url, title)
+            suggestion = next(b for p in script.paragraphs for b in p.broll if b.id == suggestion.id)
+        await self._repo.add_broll(paragraph_id, suggestion)
+        return script
+
+
+class ReplaceBroll:
+    """Troca o vídeo de uma sugestão por outro escolhido pelo editor (o corte feito no vídeo antigo continua válido)."""
+
+    def __init__(self, repo: ScriptRepository, titles: VideoTitles):
+        self._repo, self._titles = repo, titles
+
+    async def __call__(self, script_id: UUID, broll_id: UUID, url: str) -> Script:
+        script = await self._repo.get(script_id)
+        if script is None:
+            raise NotFound("Roteiro não encontrado.")
+        suggestion = script.replace_broll(broll_id, url)
+        title = await self._titles.title_of(suggestion.video_id)
+        if title:
+            suggestion = script.replace_broll(broll_id, url, title)
+        await self._repo.update_broll(suggestion)
+        return script
+
+
+class RemoveBroll:
+    def __init__(self, repo: ScriptRepository):
+        self._repo = repo
+
+    async def __call__(self, script_id: UUID, broll_id: UUID) -> Script:
+        script = await self._repo.get(script_id)
+        if script is None:
+            raise NotFound("Roteiro não encontrado.")
+        script.remove_broll(broll_id)
+        await self._repo.delete_broll(broll_id)
+        return script

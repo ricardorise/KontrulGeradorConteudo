@@ -21,7 +21,7 @@ def parse_script(raw: str) -> tuple[str | None, list[str]]:
     return _text(payload.get("title")), texts
 
 
-def parse_broll(raw: str, paragraph_count: int) -> dict[int, list[BrollSuggestion]]:
+def parse_broll(raw: str, paragraph_count: int, allowed: set[int] | None = None) -> dict[int, list[BrollSuggestion]]:
     payload = extract_json_object(raw, "scenes")
     entries = payload["scenes"]
     if not isinstance(entries, list):
@@ -34,7 +34,7 @@ def parse_broll(raw: str, paragraph_count: int) -> dict[int, list[BrollSuggestio
             index = int(entry.get("paragraph"))
         except (TypeError, ValueError):
             continue
-        if not 0 <= index < paragraph_count:
+        if not 0 <= index < paragraph_count or (allowed is not None and index not in allowed):
             continue
         suggestion = BrollSuggestion.from_scene(
             url=str(entry.get("url") or ""),

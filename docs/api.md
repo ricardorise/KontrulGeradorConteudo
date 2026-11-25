@@ -19,8 +19,11 @@ Base: `/api`. Documentação interativa gerada pelo FastAPI em `/docs` (Swagger)
 |---|---|
 | `POST /news-items/{id}/script[?force=true]` | Gera o roteiro (idempotente). Corpo opcional `{instructions}` gera um novo |
 | `GET /news-items/{id}/script` | Roteiro mais recente da notícia (ou `null`); não cria nada |
-| `GET /scripts/{id}` | Roteiro: `status, broll_status, paragraphs[{text, broll[]}], cuts[]` |
-| `POST /scripts/{id}/broll` | Refaz só o B-roll. Corpo opcional `{instructions}` |
+| `GET /scripts/{id}` | Roteiro: `status, broll_status, paragraphs[{text, broll[{video_url, source: lumiere|manual, …}]}], cuts[]` |
+| `POST /scripts/{id}/broll` | Rebusca o B-roll. Corpo opcional `{instructions?, paragraph_ids?[]}`; sem `paragraph_ids` refaz todos, com eles só esses. Não apaga o que já existe nem os vídeos escolhidos pelo editor |
+| `POST /scripts/{id}/paragraphs/{paragraph_id}/broll` | Insere um vídeo escolhido pelo editor: `{video_url}` (link do YouTube; o título é buscado no oEmbed). `409` se já está no parágrafo, `422` se o link é inválido |
+| `PUT /scripts/{id}/broll/{broll_id}` | Troca o vídeo de uma sugestão por outro link (`{video_url}`), mantendo id e posição; passa a `source=manual` |
+| `DELETE /scripts/{id}/broll/{broll_id}` | Remove o vídeo do parágrafo |
 
 ## Cortes
 | Método e rota | Descrição |

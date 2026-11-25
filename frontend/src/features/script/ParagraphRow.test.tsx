@@ -4,7 +4,7 @@ import { ParagraphRow } from './ParagraphRow'
 
 const paragraph: Paragraph = {
   id: 'p1', position: 0, text: 'Abertura do vídeo.',
-  broll: [{ id: 'b1', video_url: 'https://youtu.be/dQw4w9WgXcQ?t=65', video_id: 'dQw4w9WgXcQ', start_seconds: 65, title: 'Review', description: 'Headset em uso', justification: 'Mostra o produto' }],
+  broll: [{ id: 'b1', video_url: 'https://youtu.be/dQw4w9WgXcQ?t=65', video_id: 'dQw4w9WgXcQ', start_seconds: 65, title: 'Review', description: 'Headset em uso', justification: 'Mostra o produto', source: 'lumiere' as const }],
 }
 
 test('exibe o parágrafo ao lado do B-roll com link no timestamp', () => {
