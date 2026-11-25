@@ -21,6 +21,17 @@ class LocalMediaStore:
     def result_path(self, job_id: UUID) -> Path:
         return self._root / "renders" / f"{job_id}.mp4"
 
+    def relative(self, path: Path) -> str:
+        return path.resolve().relative_to(self._root).as_posix()
+
+    def resolve(self, stored: str) -> Path:
+        # Registros antigos guardavam o caminho absoluto da máquina onde foram gerados: usa só a parte depois de ".../media/".
+        relative = stored.split("/media/")[-1] if stored.startswith("/") and "/media/" in stored else stored
+        path = (self._root / relative).resolve()
+        if not path.is_relative_to(self._root):  # nunca sai da pasta de mídia
+            path = self._root / Path(stored).name
+        return path
+
     def main_path(self, job_id: UUID) -> Path:
         return self._root / "renders" / f"{job_id}-fala.mp4"
 

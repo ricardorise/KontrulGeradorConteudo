@@ -132,7 +132,7 @@ def create_app() -> FastAPI:
             remix_render=RemixRender(render_repo, asset_repo, runner, finisher),
             get_render=GetRender(render_repo),
             list_renders=ListRenders(render_repo),
-            open_render_video=OpenRenderVideo(render_repo, renderer),
+            open_render_video=OpenRenderVideo(render_repo, renderer, media_store),
             get_conversation=GetConversation(conversation_repo),
             list_conversations=ListConversations(conversation_repo),
         )

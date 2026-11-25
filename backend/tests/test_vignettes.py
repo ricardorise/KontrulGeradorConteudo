@@ -159,9 +159,9 @@ async def test_vignettes_are_composed_in_order_after_comfyui_finishes(tmp_path):
     composer = FakeComposer()
     job, store, repo, renderer, intro, outro = await _flow(tmp_path, composer)
     assert composer.calls == [(b"MAIN", intro.stored_name, outro.stored_name)]
-    assert job.status is JobStatus.DONE and job.stage == "done" and job.final_path == str(store.result_path(job.id))
+    assert job.status is JobStatus.DONE and job.stage == "done" and job.final_path == f"renders/{job.id}.mp4"
     assert not store.temp_path(job.id).exists()  # temporário apagado
-    source = await OpenRenderVideo(repo, renderer)(job.id)
+    source = await OpenRenderVideo(repo, renderer, store)(job.id)
     assert source.path == store.result_path(job.id) and source.stream is None  # serve o arquivo montado
 
 
@@ -596,7 +596,7 @@ async def _remix_setup(tmp_path, *, with_vignettes=True, music_baked=False):
 
 async def test_remix_recomposes_with_new_volumes_without_running_comfyui_again(tmp_path):
     repo, runner, composer, remix, opened, job, (intro, outro, song) = await _remix_setup(tmp_path)
-    assert repo.data[job.id].main_path and Path(repo.data[job.id].main_path).is_file()  # vídeo da fala guardado
+    assert repo.data[job.id].main_path and store_of(tmp_path).resolve(repo.data[job.id].main_path).is_file()  # vídeo da fala guardado
     assert len(opened) == 1 and composer.calls[-1][1] == intro.stored_name
 
     new = await remix(job.id, intro.id, outro.id, song.id, 0.2, 0.5, 1.4, False)
@@ -735,3 +735,19 @@ async def test_stage_levels_reach_final_composition_and_remix(tmp_path):
     new = await remix(job.id, intro.id, outro.id, song.id, 0.1, 1.0, 1.0, True, 0.7, 0.2)
     await runner.drain()
     assert composer.music_stages == (0.7, 0.1, 0.2) and repo.data[new.id].music_intro_volume == 0.7
+
+
+def store_of(root):
+    return LocalMediaStore(root)
+
+
+def test_media_store_paths_are_relative_and_legacy_absolute_paths_still_resolve(tmp_path):
+    store = LocalMediaStore(tmp_path)
+    job = uuid4()
+    assert store.relative(store.result_path(job)) == f"renders/{job}.mp4"
+    assert store.resolve(f"renders/{job}.mp4") == store.result_path(job)
+    # registro antigo, gravado com o caminho absoluto de outra máquina
+    legacy = f"/mnt/dados/Projects/X/backend/data/media/renders/{job}.mp4"
+    assert store.resolve(legacy) == store.result_path(job)
+    assert store.resolve("../../etc/passwd").is_relative_to(tmp_path.resolve())  # não escapa da pasta de mídia
+    assert store.resolve("/etc/passwd").is_relative_to(tmp_path.resolve())

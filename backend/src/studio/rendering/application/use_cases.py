@@ -232,8 +232,8 @@ class VideoSource:
 
 
 class OpenRenderVideo:
-    def __init__(self, jobs: RenderJobRepository, renderer: VideoRenderer):
-        self._jobs, self._renderer = jobs, renderer
+    def __init__(self, jobs: RenderJobRepository, renderer: VideoRenderer, store: MediaStore | None = None):
+        self._jobs, self._renderer, self._store = jobs, renderer, store
 
     async def __call__(self, job_id: UUID) -> VideoSource:
         job = await self._jobs.get(job_id)
@@ -241,8 +241,10 @@ class OpenRenderVideo:
             raise NotFound("Renderização não encontrada.")
         if job.status is not JobStatus.DONE or job.output is None:
             raise InvalidInput("O vídeo ainda não está pronto.")
-        if job.final_path and Path(job.final_path).is_file():
-            return VideoSource(path=Path(job.final_path))
+        if job.final_path:
+            final = self._store.resolve(job.final_path) if self._store else Path(job.final_path)
+            if final.is_file():
+                return VideoSource(path=final)
         try:
             return VideoSource(stream=await self._renderer.open_output(job.output))
         except RenderError as exc:
@@ -267,12 +269,14 @@ class RenderFinisher:
         try:
             intro = await self._asset_path(job.intro_asset_id)
             outro = await self._asset_path(job.outro_asset_id)
-            main = Path(job.main_path) if job.main_path and Path(job.main_path).is_file() else None
+            main = self._store.resolve(job.main_path) if job.main_path else None
+            if main is not None and not main.is_file():
+                main = None  # vídeo da fala não está neste ambiente: baixa de novo do ComfyUI
             if main is None:  # guarda o vídeo da fala: permite remixar sem refazer o ComfyUI
                 main = self._store.main_path(job.id)
                 stream = await self._renderer.open_output(job.output)  # type: ignore[arg-type]
                 await self._store.write_stream(main, stream.chunks)
-                job.main_path = str(main)
+                job.main_path = self._store.relative(main)
             dest = self._store.result_path(job.id)
             music = None if job.music_is_baked else await self._asset_path(job.music_asset_id)
             await self._composer.compose(
@@ -280,7 +284,7 @@ class RenderFinisher:
                 job.intro_volume, job.outro_volume, job.normalize_vignettes,
                 job.music_intro_volume, job.music_outro_volume,
             )
-            job.final_path = str(dest)
+            job.final_path = self._store.relative(dest)
             job.complete(job.output)  # type: ignore[arg-type]
         except (MediaError, RenderError) as exc:
             log.warning("render %s: montagem das vinhetas falhou: %s", job.id, exc)
