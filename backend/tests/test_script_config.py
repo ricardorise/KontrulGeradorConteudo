@@ -160,3 +160,52 @@ def test_config_roundtrip_json():
     cfg = ScriptConfig.build(BUILTIN_PROFILES[3], 12, ["A", "B"])
     assert ScriptConfig.from_json(cfg.to_json()) == cfg
     assert ScriptConfig.from_json(None) is None
+
+
+NEWS_TWO = (
+    '{"news":[{"title":"Quest 3S em promoção","summary":"Preço caiu.","details":"US$ 297."},'
+    '{"title":"Steam Frame vaza","summary":"Novo headset da Valve.","details":"Eye tracking."}]}'
+)
+
+
+async def _two_items():
+    agents = SequenceAgents(['{"paragraphs":["Texto agregado."]}'], **{Bot.TONTON.value and Bot.TONTON: NEWS_TWO})
+    news_repo, script_repo, runner, wf = _scripting(agents)
+    search = await _search_with_item(agents, runner, news_repo)
+    return agents, script_repo, runner, wf, search.items
+
+
+async def test_merged_script_uses_all_selected_news_and_theme():
+    from studio.scripting.domain.config import ScriptConfig
+
+    agents, script_repo, runner, wf, items = await _two_items()
+    cfg = ScriptConfig.build(None, None, [], theme="  Headsets   de VR em 2026 ")
+    assert cfg.theme == "Headsets de VR em 2026" and not cfg.is_empty
+    script = await StartScriptGeneration(wf)(items[0].id, False, None, cfg, [items[1].id, items[1].id, items[0].id])
+    await runner.drain()
+    saved = await script_repo.get(script.id)
+    assert saved.status is JobStatus.DONE and saved.extra_news_item_ids == [items[1].id]  # sem repetir nem incluir a principal
+    prompt = next(p for b, p in agents.calls if b is Bot.JULESVERNE)
+    assert "[NOTÍCIA 1]" in prompt and "[NOTÍCIA 2]" in prompt and "Quest 3S" in prompt and "Steam Frame" in prompt
+    assert "ÚNICO vídeo" in prompt and "Headsets de VR em 2026" in prompt and "as notícias abaixo" in prompt
+
+
+async def test_merge_always_creates_new_script_and_validates():
+    agents, script_repo, runner, wf, items = await _two_items()
+    start = StartScriptGeneration(wf)
+    first = await start(items[0].id)
+    await runner.drain()
+    merged = await start(items[0].id, False, None, None, [items[1].id])
+    assert merged.id != first.id  # agregar nunca reaproveita o roteiro simples
+    with pytest.raises(NotFound):
+        await start(items[0].id, False, None, None, [uuid4()])
+    with pytest.raises(InvalidInput):
+        await start(items[0].id, False, None, None, [uuid4() for _ in range(6)])
+
+
+async def test_single_news_prompt_unchanged_by_merge_support():
+    from studio.scripting.application.ports import NewsSource
+
+    news = NewsSource(id=uuid4(), topic="VR", title="Quest", summary="s", details=None, source_url=None)
+    prompt = script_prompt(news)
+    assert "a notícia abaixo" in prompt and "[NOTÍCIA" not in prompt and "ÚNICO" not in prompt

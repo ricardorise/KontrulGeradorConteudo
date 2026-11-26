@@ -38,6 +38,7 @@ Verificado: aplicar todas as migrações num banco vazio gera as 15 tabelas abai
 | `011_music_stage_volumes` | Nível do áudio de fundo por etapa |
 | `012_broll_source` | Origem de cada sugestão de B-roll (`lumiere` ou `manual`) |
 | `013_publications` | Rascunhos e publicações no YouTube |
+| `015_merged_scripts` | Notícias agregadas a um roteiro (`scripts.extra_news_item_ids`) |
 | `014_script_config` | Perfis de roteirista, configuração usada em cada roteiro e apresentador por parágrafo |
 
 ## Tabelas (`content_studio`)
@@ -61,7 +62,7 @@ erDiagram
 |---|---|
 | `news_searches` | Tema, estado, erro, instruções, `report_context` (contrato do Radar) |
 | `news_items` | Título, resumo, `details` (fatos), fonte, data, `radar` (análise) |
-| `scripts` | Título, estado do roteiro e do B-roll, erros, instruções, `config` (perfil/tempo/apresentadores usados) |
+| `scripts` | `extra_news_item_ids` (notícias agregadas), título, estado do roteiro e do B-roll, erros, instruções, `config` (perfil/tempo/apresentadores usados) |
 | `script_paragraphs` | Texto, posição e `speaker` (apresentador) de cada parágrafo |
 | `script_profiles` | Perfis de roteirista cadastrados pelo editor |
 | `broll_suggestions` | Cenas: URL, `video_id`, início, descrição, justificativa e `source` (`lumiere` = automática, `manual` = escolhida pelo editor) |

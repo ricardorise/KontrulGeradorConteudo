@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { NewsSearch } from '../../api/types'
 import { RadarDetails } from './RadarDetails'
 
@@ -8,9 +9,14 @@ interface Props {
   error: string | null
   selectedItemId: string | null
   onSelect: (itemId: string) => void
+  onMerge?: (itemIds: string[]) => void // cria um só roteiro a partir de várias notícias (na ordem da lista)
 }
 
-export function NewsList({ search, error, selectedItemId, onSelect }: Props) {
+const MAX_MERGE = 6
+
+export function NewsList({ search, error, selectedItemId, onSelect, onMerge }: Props) {
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  useEffect(() => setPicked(new Set()), [search?.id])
   if (!search) {
     return <p className="empty">Pesquise um tema para o Tonton buscar notícias.</p>
   }
@@ -41,9 +47,44 @@ export function NewsList({ search, error, selectedItemId, onSelect }: Props) {
           {!!search.report_context.discarded?.length && <><strong>Descartados</strong><ul>{search.report_context.discarded.map((text, i) => <li key={i}>{text}</li>)}</ul></>}
         </details>
       </section>}
+      {onMerge && (
+        <div className="merge-bar" aria-label="Agregar notícias">
+          <span className="muted">Marque duas ou mais notícias para juntá-las num só roteiro.</span>
+          <button
+            className="secondary"
+            disabled={picked.size < 2}
+            onClick={() => onMerge(search.items.filter((i) => picked.has(i.id)).map((i) => i.id))}
+          >
+            Criar roteiro com as selecionadas ({picked.size})
+          </button>
+          {picked.size > 0 && (
+            <button className="secondary" onClick={() => setPicked(new Set())}>
+              Limpar
+            </button>
+          )}
+        </div>
+      )}
       <ul className="news-list">
         {search.items.map((item) => (
-          <li key={item.id}>
+          <li key={item.id} className={onMerge ? 'news-row with-merge' : undefined}>
+            {onMerge && (
+              <label className="merge-check" title="Agregar esta notícia a um roteiro único">
+                <input
+                  type="checkbox"
+                  aria-label={`Agregar: ${item.title}`}
+                  checked={picked.has(item.id)}
+                  disabled={!picked.has(item.id) && picked.size >= MAX_MERGE}
+                  onChange={(e) =>
+                    setPicked((prev) => {
+                      const next = new Set(prev)
+                      if (e.target.checked) next.add(item.id)
+                      else next.delete(item.id)
+                      return next
+                    })
+                  }
+                />
+              </label>
+            )}
             <button
               className={`news-card${item.id === selectedItemId ? ' selected' : ''}`}
               onClick={() => onSelect(item.id)}

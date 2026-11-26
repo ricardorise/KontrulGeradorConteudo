@@ -17,7 +17,7 @@ class PostgresScriptCatalog:
         rows = await self._pool.fetch(
             f"""
             SELECT s.id, s.news_item_id, n.search_id, n.title AS news_title, q.topic, s.title, s.status, s.created_at,
-                   s.config,
+                   s.config, cardinality(s.extra_news_item_ids) AS extra_news,
                    (SELECT count(*) FROM {T}.script_paragraphs p WHERE p.script_id = s.id) AS paragraphs,
                    (SELECT count(*) FROM {T}.renders r WHERE r.script_id = s.id AND r.status = 'done') AS videos_done,
                    (SELECT pub.status FROM {T}.publications pub JOIN {T}.renders r2 ON r2.id = pub.render_id
@@ -38,7 +38,7 @@ class PostgresScriptCatalog:
                     topic=r["topic"], script_title=r["title"], status=r["status"], created_at=r["created_at"],
                     paragraphs=r["paragraphs"], profile_name=config.get("profile_name"),
                     duration_minutes=config.get("duration_minutes"), presenters=tuple(config.get("presenters") or ()),
-                    videos_done=r["videos_done"], publication_status=r["publication_status"],
+                    extra_news=r["extra_news"], videos_done=r["videos_done"], publication_status=r["publication_status"],
                 )  # fmt: skip
             )
         return entries

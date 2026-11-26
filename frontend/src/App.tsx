@@ -28,6 +28,7 @@ export function App() {
   const [configItemId, setConfigItemId] = useState<string | null>(null) // notícia cuja "Configuração do roteiro" está aberta
   const [generating, setGenerating] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [mergeIds, setMergeIds] = useState<string[]>([]) // notícias agregadas à principal (configItemId) no próximo roteiro
 
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -84,15 +85,16 @@ export function App() {
     setSearchId(id)
   }
 
-  const generateScript = async (newsItemId: string, config: ScriptConfigInput) => {
+  const generateScript = async (newsItemId: string, config: ScriptConfigInput, extraIds: string[] = []) => {
     setActionError(null)
     setItemId(newsItemId)
     setPublicationId(null)
     setGenerating(true)
     try {
-      const created = await api.generateScript(newsItemId, true, config)
+      const created = await api.generateScript(newsItemId, true, config, extraIds)
       setScriptId(created.id)
       setConfigItemId(null)
+      setMergeIds([])
       script.refresh()
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Falha ao gerar o roteiro')
@@ -101,9 +103,20 @@ export function App() {
     }
   }
 
+  // Agrega várias notícias num só roteiro: a primeira da lista é a principal; abre a configuração antes de gerar.
+  const startMerge = (ids: string[]) => {
+    setActionError(null)
+    setPublicationId(null)
+    setItemId(ids[0])
+    setScriptId(null)
+    setMergeIds(ids.slice(1))
+    setConfigItemId(ids[0])
+  }
+
   // Clicar numa notícia reabre o roteiro que ela já tem; sem roteiro, abre a configuração antes de gerar.
   const openNews = async (newsItemId: string) => {
     setActionError(null)
+    setMergeIds([])
     setItemId(newsItemId)
     setPublicationId(null)
     try {
@@ -178,7 +191,7 @@ export function App() {
             refreshKey={search.data ? `${search.data.id}:${search.data.status}` : null}
             onOpen={openSearch}
           />
-          <NewsList search={search.data} error={search.error} selectedItemId={itemId} onSelect={(id) => void openNews(id)} />
+          <NewsList search={search.data} error={search.error} selectedItemId={itemId} onSelect={(id) => void openNews(id)} onMerge={startMerge} />
         </section>
 
         <section className="column script-column" aria-label="Roteiro">
@@ -187,8 +200,9 @@ export function App() {
           ) : configItemId ? (
             <ScriptConfigPanel
               newsTitle={selectedItem?.title}
+              mergedTitles={mergeIds.length ? [configItemId, ...mergeIds].map((id) => search.data?.items.find((i) => i.id === id)?.title ?? 'Notícia') : undefined}
               busy={generating}
-              onGenerate={(config) => void generateScript(configItemId, config)}
+              onGenerate={(config) => void generateScript(configItemId, config, mergeIds)}
               onCancel={scriptId ? () => setConfigItemId(null) : undefined}
             />
           ) : (
@@ -203,7 +217,10 @@ export function App() {
               script.refresh()
             }}
             onCutsChanged={(s) => script.setData(s)}
-            onRetryScript={() => itemId && setConfigItemId(itemId)}
+            onRetryScript={() => {
+              setMergeIds([])
+              if (itemId) setConfigItemId(itemId)
+            }}
             onPublication={setPublicationId}
           />
             </>

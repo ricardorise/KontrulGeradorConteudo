@@ -20,6 +20,9 @@ Se o tema contiver a palavra **"radar"**, aparecem as configurações do Radar:
 
 - Clique numa notícia: se ela já tem roteiro, ele reabre; se não, abre a **Configuração do roteiro** (abaixo) e **Gerar roteiro** cria o texto. O **Jules Verne** escreve parágrafos curtos para narração, usando **só** o material do Tonton (não inventa dados). **Gerar novo roteiro** (no topo do roteiro) reabre a configuração.
 
+### Agregar várias notícias num roteiro
+Cada notícia da lista tem uma **caixa de seleção**. Marque duas ou mais (até 6) e clique em **Criar roteiro com as selecionadas (N)**: abre a configuração do roteiro, com a lista das notícias agregadas e o campo opcional **Assunto / tema do vídeo** (o fio condutor). O Jules Verne junta tudo num único vídeo, cruza as informações e aponta divergências entre as notícias. A primeira da lista é a principal; as fontes de todas entram nos links da publicação no YouTube. Sempre cria um roteiro novo.
+
 ### Roteiros criados (histórico)
 O botão **Roteiros criados**, no topo, lista todos os assuntos que já tiveram roteiro (mais recentes primeiro): notícia, título do roteiro, data, parágrafos, perfil/tempo/apresentadores, se já tem **vídeo pronto** e a situação da **publicação no YouTube**, além da busca de origem. Há filtro por assunto; clicar abre a busca e o roteiro direto, sem procurar nas buscas.
 

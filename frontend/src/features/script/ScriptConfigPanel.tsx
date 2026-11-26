@@ -4,6 +4,7 @@ import type { ScriptConfigInput, ScriptOptions } from '../../api/types'
 
 interface Props {
   newsTitle?: string
+  mergedTitles?: string[] // roteiro agregado: títulos das notícias juntadas (a principal primeiro)
   onGenerate: (config: ScriptConfigInput) => void
   onCancel?: () => void
   busy?: boolean
@@ -21,7 +22,7 @@ const load = (): Saved => {
 }
 
 /** "Configuração do roteiro": perfil do roteirista, tempo e apresentadores, definidos antes de gerar. */
-export function ScriptConfigPanel({ newsTitle, onGenerate, onCancel, busy }: Props) {
+export function ScriptConfigPanel({ newsTitle, mergedTitles, onGenerate, onCancel, busy }: Props) {
   const [options, setOptions] = useState<ScriptOptions | null>(null)
   const [error, setError] = useState<string | null>(null)
   const saved = load()
@@ -30,6 +31,7 @@ export function ScriptConfigPanel({ newsTitle, onGenerate, onCancel, busy }: Pro
   const [two, setTwo] = useState(saved.two)
   const [names, setNames] = useState<[string, string]>(saved.names)
   const [solo, setSolo] = useState(saved.solo)
+  const [theme, setTheme] = useState('')
   const [creating, setCreating] = useState(false)
   const [draft, setDraft] = useState({ name: '', description: '', instructions: '' })
 
@@ -59,6 +61,7 @@ export function ScriptConfigPanel({ newsTitle, onGenerate, onCancel, busy }: Pro
       profile_id: profileId,
       duration_minutes: minutes,
       presenters: two ? trimmed : solo.trim() ? [solo.trim()] : [],
+      theme: theme.trim() || null,
     })
   }
 
@@ -96,7 +99,18 @@ export function ScriptConfigPanel({ newsTitle, onGenerate, onCancel, busy }: Pro
           </button>
         )}
       </header>
-      {newsTitle && <p className="source">Notícia: {newsTitle}</p>}
+      {mergedTitles && mergedTitles.length > 1 ? (
+        <div className="source" aria-label="Notícias agregadas">
+          <strong>Roteiro agregado de {mergedTitles.length} notícias:</strong>
+          <ol className="merged-list">
+            {mergedTitles.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ol>
+        </div>
+      ) : (
+        newsTitle && <p className="source">Notícia: {newsTitle}</p>
+      )}
       <p className="muted">Defina como o roteiro deve ser escrito antes de gerá-lo.</p>
       {error && <p className="error">{error}</p>}
       {!options && !error && (
@@ -107,6 +121,21 @@ export function ScriptConfigPanel({ newsTitle, onGenerate, onCancel, busy }: Pro
 
       {options && (
         <>
+          <label className="field">
+            Assunto / tema do vídeo (opcional)
+            <input
+              value={theme}
+              maxLength={200}
+              onChange={(e) => setTheme(e.target.value)}
+              placeholder={mergedTitles && mergedTitles.length > 1 ? 'Ex.: A corrida dos headsets de VR em 2026' : 'Ex.: o ângulo que o vídeo deve ter'}
+            />
+            <small className="muted">
+              {mergedTitles && mergedTitles.length > 1
+                ? 'Diz ao roteirista o fio condutor que une as notícias.'
+                : 'Se preencher, o roteiro gira em torno deste tema.'}
+            </small>
+          </label>
+
           <fieldset className="cfg-group">
             <legend>Perfil do roteirista</legend>
             <div className="cfg-options" role="radiogroup" aria-label="Perfil do roteirista">

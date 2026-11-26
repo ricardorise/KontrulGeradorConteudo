@@ -166,14 +166,19 @@ class Script:
     finished_at: datetime | None = None
     instructions: str | None = None
     config: ScriptConfig | None = None  # perfil, tempo e apresentadores usados neste roteiro
+    extra_news_item_ids: list[UUID] = field(default_factory=list)  # notícias agregadas (merge) além da principal
     paragraphs: list[Paragraph] = field(default_factory=list)
     cuts: list[Cut] = field(default_factory=list)
 
     @classmethod
-    def start(cls, news_item_id: UUID, instructions: str | None = None, config: ScriptConfig | None = None) -> "Script":
+    def start(
+        cls, news_item_id: UUID, instructions: str | None = None, config: ScriptConfig | None = None,
+        extra_news_item_ids: list[UUID] | None = None,
+    ) -> "Script":
         return cls(
             id=uuid4(), news_item_id=news_item_id, status=JobStatus.RUNNING, created_at=utcnow(),
             instructions=(instructions or "").strip() or None, config=config if config and not config.is_empty else None,
+            extra_news_item_ids=list(extra_news_item_ids or []),
         )
 
     @property

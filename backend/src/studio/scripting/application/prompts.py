@@ -7,6 +7,8 @@ def _config_block(config: ScriptConfig | None) -> str:
     if config is None or config.is_empty:
         return ""
     parts = []
+    if config.theme:
+        parts.append(f"ASSUNTO/TEMA DO VÍDEO — {config.theme}: o roteiro inteiro deve girar em torno disso; use das notícias só o que serve a esse tema.")
     if config.profile_name:
         parts.append(f"PERFIL DO ROTEIRISTA — {config.profile_name}:\n{config.profile_instructions}")
     if config.max_chars:
@@ -29,26 +31,43 @@ def _config_block(config: ScriptConfig | None) -> str:
 
 
 def script_prompt(
-    news: NewsSource, guidelines: list[str] | None = None, instructions: str | None = None, config: ScriptConfig | None = None
+    news: NewsSource, guidelines: list[str] | None = None, instructions: str | None = None, config: ScriptConfig | None = None,
+    extras: list[NewsSource] | None = None,
 ) -> str:
-    material = [f"Tema pesquisado: {news.topic}", f"Título: {news.title}", f"Resumo: {news.summary}"]
-    if news.details:
-        material.append(f"Fatos levantados: {news.details}")
-    if news.source_url:
-        material.append(f"Fonte: {news.source_url}")
+    def block(item: NewsSource) -> list[str]:
+        lines = [f"Título: {item.title}", f"Resumo: {item.summary}"]
+        if item.details:
+            lines.append(f"Fatos levantados: {item.details}")
+        if item.source_url:
+            lines.append(f"Fonte: {item.source_url}")
+        return lines
+
+    material = [f"Tema pesquisado: {news.topic}"]
+    if extras:
+        for n, item in enumerate([news, *extras], 1):
+            material += [f"\n[NOTÍCIA {n}]", *block(item)]
+    else:
+        material += block(news)
+    merge_rule = (
+        f" O roteiro junta as {1 + len(extras)} notícias do material num ÚNICO vídeo: cruze as informações, destaque o que "
+        "uma notícia acrescenta à outra, aponte divergências entre elas em vez de escolher uma versão, não repita o mesmo "
+        "fato e não trate cada notícia como um bloco separado."
+        if extras
+        else ""
+    )
     paragraph_rule = "Entre 6 e 10 parágrafos curtos" if not (config and config.max_chars) else "Parágrafos curtos"
     if config and config.is_dialogue:
         a, b = config.presenters
         example = f'{{"title":"título do vídeo","paragraphs":[{{"speaker":"{a}","text":"fala 1"}},{{"speaker":"{b}","text":"fala 2"}}]}}'
     else:
         example = '{"title":"título do vídeo","paragraphs":["parágrafo 1","parágrafo 2"]}'
-    return f"""Escreva o roteiro de narração de um vídeo curto do PapoTech Cast sobre a notícia abaixo, usando APENAS o material recebido (não invente dados, números ou citações).
+    return f"""Escreva o roteiro de narração de um vídeo curto do PapoTech Cast sobre {'as notícias' if extras else 'a notícia'} abaixo, usando APENAS o material recebido (não invente dados, números ou citações).
 
 --- MATERIAL ---
 {chr(10).join(material)}
 --- FIM DO MATERIAL ---
 
-Estrutura padrão: gancho de abertura, desenvolvimento e fechamento. {paragraph_rule}, escritos para serem falados, em português do Brasil (as orientações do editor abaixo podem mudar tom, tamanho ou ângulo).{_config_block(config)}{render_guidance(guidelines or [], instructions)}
+Estrutura padrão: gancho de abertura, desenvolvimento e fechamento.{merge_rule} {paragraph_rule}, escritos para serem falados, em português do Brasil (as orientações do editor abaixo podem mudar tom, tamanho ou ângulo).{_config_block(config)}{render_guidance(guidelines or [], instructions)}
 
 Responda SOMENTE com JSON válido (sem markdown, sem texto antes ou depois):
 {example}"""

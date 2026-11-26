@@ -37,7 +37,7 @@ test('só libera "Gerar roteiro" com perfil e tempo escolhidos e envia a configu
   fireEvent.click(screen.getByLabelText(/Vídeo de 12 minutos/))
   expect(generate).toBeEnabled()
   fireEvent.click(generate)
-  expect(onGenerate).toHaveBeenCalledWith({ profile_id: 'tech', duration_minutes: 12, presenters: [] })
+  expect(onGenerate).toHaveBeenCalledWith({ profile_id: 'tech', duration_minutes: 12, presenters: [], theme: null })
 })
 
 test('dois apresentadores exigem dois nomes diferentes e vão na ordem digitada', async () => {
@@ -54,7 +54,7 @@ test('dois apresentadores exigem dois nomes diferentes e vão na ordem digitada'
   expect(generate).toBeDisabled() // iguais
   fireEvent.change(screen.getByLabelText('Nome do apresentador 2'), { target: { value: 'Beto' } })
   fireEvent.click(generate)
-  expect(onGenerate).toHaveBeenCalledWith({ profile_id: 'jornalistico', duration_minutes: 5, presenters: ['Ana', 'Beto'] })
+  expect(onGenerate).toHaveBeenCalledWith({ profile_id: 'jornalistico', duration_minutes: 5, presenters: ['Ana', 'Beto'], theme: null })
 })
 
 test('um apresentador: nome opcional', async () => {
@@ -65,7 +65,7 @@ test('um apresentador: nome opcional', async () => {
   fireEvent.click(screen.getByLabelText(/Vídeo de 8 minutos/))
   fireEvent.change(screen.getByLabelText(/Nome do apresentador \(opcional\)/), { target: { value: ' Ricardo ' } })
   fireEvent.click(screen.getByRole('button', { name: 'Gerar roteiro' }))
-  expect(onGenerate).toHaveBeenCalledWith({ profile_id: 'jornalistico', duration_minutes: 8, presenters: ['Ricardo'] })
+  expect(onGenerate).toHaveBeenCalledWith({ profile_id: 'jornalistico', duration_minutes: 8, presenters: ['Ricardo'], theme: null })
 })
 
 test('lembra a última escolha na próxima vez', async () => {
@@ -99,4 +99,17 @@ test('cadastra um perfil novo e já o seleciona; só perfis próprios podem ser 
   vi.mocked(api.scriptOptions).mockResolvedValue(options())
   fireEvent.click(screen.getByRole('button', { name: 'Apagar perfil Humor ácido' }))
   await waitFor(() => expect(api.deleteScriptProfile).toHaveBeenCalledWith('u1'))
+})
+
+test('assunto/tema opcional vai na configuração e o roteiro agregado lista as notícias', async () => {
+  const onGenerate = vi.fn()
+  render(<ScriptConfigPanel mergedTitles={['Quest 3S em promoção', 'Steam Frame vaza']} onGenerate={onGenerate} />)
+  await screen.findByRole('button', { name: 'Gerar roteiro' })
+  expect(screen.getByLabelText('Notícias agregadas')).toHaveTextContent('Roteiro agregado de 2 notícias')
+  expect(screen.getByText('Steam Frame vaza')).toBeInTheDocument()
+  fireEvent.click(screen.getByLabelText(/Tech & Analítico/))
+  fireEvent.click(screen.getByLabelText(/Vídeo de 8 minutos/))
+  fireEvent.change(screen.getByLabelText(/Assunto \/ tema do vídeo/), { target: { value: ' A corrida dos headsets ' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Gerar roteiro' }))
+  expect(onGenerate).toHaveBeenCalledWith({ profile_id: 'tech', duration_minutes: 8, presenters: [], theme: 'A corrida dos headsets' })
 })

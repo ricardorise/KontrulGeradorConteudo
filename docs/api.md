@@ -17,6 +17,7 @@ Base: `/api`. Documentação interativa gerada pelo FastAPI em `/docs` (Swagger)
 ## Roteiro e B-roll
 | Método e rota | Descrição |
 |---|---|
+| `POST /news-items/{id}/script[?force=true]` | (aceita também `extra_news_item_ids` (até 5, agrega notícias) e `config.theme` (assunto/tema do vídeo)) |
 | `POST /news-items/{id}/script[?force=true]` | Gera o roteiro (idempotente). Corpo opcional `{instructions?, config?: {profile_id, duration_minutes (5/8/12/20), presenters (0–2 nomes)}}` gera um novo |
 | `GET /scripts?limit=` | Histórico de roteiros (assunto, busca de origem, perfil/tempo/apresentadores, vídeos prontos, estado da publicação) |
 | `GET /script-options` | Perfis (básicos + cadastrados) e tempos (`minutes`, `max_chars`) |

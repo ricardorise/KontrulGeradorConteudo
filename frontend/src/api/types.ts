@@ -100,6 +100,7 @@ export interface ScriptConfigUsed {
   duration_minutes: number | null
   max_chars: number | null
   presenters: string[]
+  theme?: string | null
 }
 
 export interface ScriptEntry {
@@ -115,6 +116,7 @@ export interface ScriptEntry {
   profile_name: string | null
   duration_minutes: number | null
   presenters: string[]
+  extra_news?: number
   videos_done: number
   publication_status: string | null
 }
@@ -137,6 +139,7 @@ export interface ScriptConfigInput {
   profile_id: string | null
   duration_minutes: number | null
   presenters: string[]
+  theme?: string | null
 }
 
 export interface Script {
@@ -149,6 +152,7 @@ export interface Script {
   broll_error: string | null
   instructions: string | null
   config?: ScriptConfigUsed | null
+  extra_news_item_ids?: string[]
   total_chars?: number
   created_at: string
   paragraphs: Paragraph[]

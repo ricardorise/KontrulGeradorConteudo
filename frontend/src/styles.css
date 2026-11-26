@@ -307,3 +307,10 @@ button.small { padding: 3px 8px; font-size: 12px; }
 .history-item { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 3px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; cursor: pointer; }
 .history-item:hover { border-color: var(--accent, #6ea8fe); }
 .history-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--muted); align-items: center; }
+
+/* Agregar notícias */
+.merge-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 8px; }
+.news-row.with-merge { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: start; }
+.news-row.with-merge > :not(.merge-check):not(.news-card) { grid-column: 2; }
+.merge-check { padding-top: 14px; cursor: pointer; }
+.merged-list { margin: 4px 0 0; padding-left: 20px; font-weight: 400; }

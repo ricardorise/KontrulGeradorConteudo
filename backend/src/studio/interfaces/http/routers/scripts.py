@@ -32,8 +32,12 @@ async def generate_script(
     config = None
     if body and body.config:
         cfg = body.config
-        config = await uc.script_options.build(cfg.profile_id, cfg.duration_minutes, cfg.presenters)
-    return ScriptOut.of(await uc.start_script(news_item_id, force, body.instructions if body else None, config))
+        config = await uc.script_options.build(cfg.profile_id, cfg.duration_minutes, cfg.presenters, cfg.theme)
+    return ScriptOut.of(
+        await uc.start_script(
+            news_item_id, force, body.instructions if body else None, config, body.extra_news_item_ids if body else None
+        )
+    )
 
 
 @router.get("/scripts", response_model=list[ScriptEntryOut])

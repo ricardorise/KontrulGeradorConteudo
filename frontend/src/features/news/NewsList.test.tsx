@@ -46,3 +46,21 @@ test('mostra rank separado da classificação e a janela UTC registrada', () => 
   expect(screen.getByText(/RADAR DE TENDÊNCIAS — VR\/XR/)).toBeInTheDocument()
   expect(screen.getByText(/20\/11\/2026/)).toBeInTheDocument()
 })
+
+test('agregar notícias: marca duas ou mais e cria um só roteiro na ordem da lista', () => {
+  const onMerge = vi.fn()
+  render(<NewsList search={base} error={null} selectedItemId={null} onSelect={() => {}} onMerge={onMerge} />)
+  const create = screen.getByRole('button', { name: /Criar roteiro com as selecionadas/ })
+  expect(create).toBeDisabled()
+  fireEvent.click(screen.getByLabelText('Agregar: Novo menu')) // marcada primeiro, mas a ordem é a da lista
+  expect(create).toBeDisabled() // uma só não basta
+  fireEvent.click(screen.getByLabelText('Agregar: Quest em promoção'))
+  expect(create).toBeEnabled()
+  fireEvent.click(create)
+  expect(onMerge).toHaveBeenCalledWith(['n1', 'n2'])
+})
+
+test('sem onMerge não mostra caixas de seleção', () => {
+  render(<NewsList search={base} error={null} selectedItemId={null} onSelect={() => {}} />)
+  expect(screen.queryByLabelText(/Agregar:/)).toBeNull()
+})

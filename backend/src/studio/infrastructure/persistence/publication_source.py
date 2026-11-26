@@ -31,7 +31,12 @@ class RenderPublicationSource:
             return None
         search, item = found
 
-        urls = [item.source_url, *[u for u in (item.radar or {}).get("sources", []) if isinstance(u, str)]]
+        merged = [item]
+        for extra_id in script.extra_news_item_ids:  # notícias agregadas: suas fontes também entram na descrição
+            more = await self._searches.find_item(extra_id)
+            if more:
+                merged.append(more[1])
+        urls = [u for it in merged for u in (it.source_url, *[s for s in (it.radar or {}).get("sources", []) if isinstance(s, str)])]
         links: list[Link] = []
         seen: set[str] = set()
         for url in urls:
@@ -44,6 +49,6 @@ class RenderPublicationSource:
         links += [Link(title[:90], f"https://youtu.be/{vid}", "broll") for vid, title in list(used.items())[:MAX_SCENES]]
         return PublicationMaterial(
             script_id=script.id, topic=search.topic, script_title=script.title,
-            paragraphs=[p.text for p in script.paragraphs], news_title=item.title, news_summary=item.summary,
-            news_details=item.details, links=links, video_name=job.output.filename,
+            paragraphs=[p.text for p in script.paragraphs], news_title=" + ".join(it.title for it in merged), news_summary="\n".join(it.summary for it in merged),
+            news_details="\n\n".join(filter(None, (it.details for it in merged))) or None, links=links, video_name=job.output.filename,
         )  # fmt: skip

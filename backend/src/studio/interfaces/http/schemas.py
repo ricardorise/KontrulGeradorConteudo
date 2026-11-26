@@ -135,6 +135,7 @@ class ScriptConfigOut(BaseModel):
     duration_minutes: int | None
     max_chars: int | None
     presenters: list[str]
+    theme: str | None = None
 
 
 class ScriptOut(BaseModel):
@@ -147,6 +148,7 @@ class ScriptOut(BaseModel):
     broll_error: str | None
     instructions: str | None
     config: ScriptConfigOut | None = None
+    extra_news_item_ids: list[UUID] = []
     total_chars: int = 0
     created_at: datetime
     paragraphs: list[ParagraphOut]
@@ -156,10 +158,10 @@ class ScriptOut(BaseModel):
     def of(cls, s: Script) -> "ScriptOut":
         return cls(
             id=s.id, news_item_id=s.news_item_id, title=s.title, status=s.status.value, error=s.error,
-            broll_status=s.broll_status.value, broll_error=s.broll_error, instructions=s.instructions, created_at=s.created_at, total_chars=s.total_chars,
+            broll_status=s.broll_status.value, broll_error=s.broll_error, instructions=s.instructions, created_at=s.created_at, total_chars=s.total_chars, extra_news_item_ids=s.extra_news_item_ids,
             config=ScriptConfigOut(
                 profile_id=s.config.profile_id, profile_name=s.config.profile_name, duration_minutes=s.config.duration_minutes,
-                max_chars=s.config.max_chars, presenters=list(s.config.presenters),
+                max_chars=s.config.max_chars, presenters=list(s.config.presenters), theme=s.config.theme,
             ) if s.config else None,
             paragraphs=[ParagraphOut.of(p) for p in s.paragraphs], cuts=[CutOut.of(c) for c in s.cuts],
         )  # fmt: skip
@@ -171,11 +173,13 @@ class ScriptConfigIn(BaseModel):
     profile_id: str | None = Field(default=None, max_length=60)  # perfil básico (slug) ou cadastrado (uuid)
     duration_minutes: int | None = None  # 5, 8, 12 ou 20 (limite de caracteres correspondente)
     presenters: list[str] = Field(default_factory=list, max_length=2)  # 1 nome (opcional) = um apresentador; 2 = diálogo
+    theme: str | None = Field(default=None, max_length=200)  # assunto/tema do vídeo
 
 
 class ScriptIn(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
     config: ScriptConfigIn | None = None
+    extra_news_item_ids: list[UUID] = Field(default_factory=list, max_length=5)  # agrega outras notícias ao roteiro
 
 
 class ScriptEntryOut(BaseModel):
@@ -191,6 +195,7 @@ class ScriptEntryOut(BaseModel):
     profile_name: str | None
     duration_minutes: int | None
     presenters: list[str]
+    extra_news: int
     videos_done: int
     publication_status: str | None
 

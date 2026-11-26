@@ -40,8 +40,11 @@ export const api = {
   getNewsSearch: (id: string) => request<NewsSearch>(`/news-searches/${id}`),
   listNewsSearches: () => request<NewsSearch[]>('/news-searches?limit=15'),
 
-  generateScript: (newsItemId: string, force = false, config?: ScriptConfigInput) =>
-    post<Script>(`/news-items/${newsItemId}/script${force ? '?force=true' : ''}`, config ? { config } : undefined),
+  generateScript: (newsItemId: string, force = false, config?: ScriptConfigInput, extraNewsItemIds: string[] = []) =>
+    post<Script>(
+      `/news-items/${newsItemId}/script${force ? '?force=true' : ''}`,
+      config ? { config, ...(extraNewsItemIds.length ? { extra_news_item_ids: extraNewsItemIds } : {}) } : undefined,
+    ),
   listScripts: () => request<ScriptEntry[]>('/scripts?limit=150'),
   scriptOptions: () => request<ScriptOptions>('/script-options'),
   addScriptProfile: (name: string, instructions: string, description = '') =>

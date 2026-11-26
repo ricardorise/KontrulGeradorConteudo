@@ -20,6 +20,7 @@ class ScriptEntry:
     profile_name: str | None
     duration_minutes: int | None
     presenters: tuple[str, ...]
+    extra_news: int  # notícias agregadas além da principal
     videos_done: int  # envios ao ComfyUI concluídos
     publication_status: str | None  # último rascunho/publicação no YouTube
 

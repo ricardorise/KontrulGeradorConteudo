@@ -5,7 +5,7 @@ from uuid import UUID
 from studio.scripting.application.parsing import parse_broll, parse_script_lines
 from studio.scripting.application.ports import NewsSourceReader
 from studio.scripting.application.prompts import broll_prompt, script_prompt, shorten_prompt
-from studio.scripting.domain.config import BUILTIN_PROFILES, DURATIONS, ScriptConfig, ScriptProfile, builtin_profile
+from studio.scripting.domain.config import BUILTIN_PROFILES, DURATIONS, MAX_EXTRA_NEWS, ScriptConfig, ScriptProfile, builtin_profile
 from studio.scripting.domain.repository import ScriptProfileRepository, ScriptRepository
 from studio.scripting.domain.script import Script
 from studio.shared.application.ports import AgentError, AgentGateway, BackgroundRunner, GuidelineSource
@@ -41,7 +41,13 @@ class ScriptWorkflow:
             return
         try:
             rules = await self.guidelines.texts_for(GuidelineScope.SCRIPT)
-            prompt = script_prompt(source, rules, script.instructions, script.config)
+            extras = []
+            for extra_id in script.extra_news_item_ids:
+                found = await self.news.get(extra_id)
+                if found is None:
+                    raise AgentError("Uma das notícias agregadas não foi encontrada.")
+                extras.append(found)
+            prompt = script_prompt(source, rules, script.instructions, script.config, extras)
             raw = await self.agents.ask(Bot.JULESVERNE, prompt)
             title, lines = parse_script_lines(raw, script.config)
             config = script.config
@@ -118,9 +124,9 @@ class ScriptConfigOptions:
         return found
 
     async def build(
-        self, profile_id: str | None, duration_minutes: int | None, presenters: list[str] | None
+        self, profile_id: str | None, duration_minutes: int | None, presenters: list[str] | None, theme: str | None = None
     ) -> ScriptConfig:
-        return ScriptConfig.build(await self.resolve(profile_id), duration_minutes, presenters)
+        return ScriptConfig.build(await self.resolve(profile_id), duration_minutes, presenters, theme)
 
     durations = DURATIONS
 
@@ -153,17 +159,24 @@ class StartScriptGeneration:
         self._wf = workflow
 
     async def __call__(
-        self, news_item_id: UUID, force: bool = False, instructions: str | None = None, config: ScriptConfig | None = None
+        self, news_item_id: UUID, force: bool = False, instructions: str | None = None, config: ScriptConfig | None = None,
+        extra_news_item_ids: list[UUID] | None = None,
     ) -> Script:
         if await self._wf.news.get(news_item_id) is None:
             raise NotFound("Notícia não encontrada.")
+        extras = list(dict.fromkeys(i for i in (extra_news_item_ids or []) if i != news_item_id))
+        if len(extras) > MAX_EXTRA_NEWS:
+            raise InvalidInput(f"Junte no máximo {MAX_EXTRA_NEWS + 1} notícias num roteiro.")
+        for extra_id in extras:
+            if await self._wf.news.get(extra_id) is None:
+                raise NotFound("Uma das notícias escolhidas não foi encontrada.")
         has_config = bool(config and not config.is_empty)
-        force = force or has_config or bool(instructions and instructions.strip())  # pedido específico => novo roteiro
+        force = force or has_config or bool(extras) or bool(instructions and instructions.strip())  # pedido específico => novo roteiro
         if not force:
             existing = await self._wf.repo.get_latest_for_news_item(news_item_id)
             if existing and existing.status is not JobStatus.FAILED:
                 return existing
-        script = Script.start(news_item_id, instructions, config)
+        script = Script.start(news_item_id, instructions, config, extras)
         await self._wf.repo.add(script)
         self._wf.runner.submit(self._wf.write_script(script.id))
         return script

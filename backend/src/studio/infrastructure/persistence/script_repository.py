@@ -17,10 +17,10 @@ class PostgresScriptRepository:
     async def add(self, script: Script) -> None:
         await self._pool.execute(
             f"INSERT INTO {T}.scripts (id, news_item_id, title, status, error, broll_status, broll_error, "
-            "created_at, finished_at, instructions, config) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)",
+            "created_at, finished_at, instructions, config, extra_news_item_ids) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12)",
             script.id, script.news_item_id, script.title, script.status.value, script.error,
             script.broll_status.value, script.broll_error, script.created_at, script.finished_at, script.instructions,
-            json.dumps(script.config.to_json()) if script.config else None,
+            json.dumps(script.config.to_json()) if script.config else None, script.extra_news_item_ids,
         )  # fmt: skip
 
     async def save(self, script: Script) -> None:
@@ -157,6 +157,7 @@ class PostgresScriptRepository:
             created_at=row["created_at"], broll_status=JobStatus(row["broll_status"]), title=row["title"],
             error=row["error"], broll_error=row["broll_error"], finished_at=row["finished_at"],
             instructions=row["instructions"],
+            extra_news_item_ids=list(row["extra_news_item_ids"] or []),
             config=ScriptConfig.from_json(json.loads(row["config"]) if row["config"] else None),
             paragraphs=[
                 Paragraph(id=p["id"], position=p["position"], text=p["text"], broll=by_paragraph.get(p["id"], []), speaker=p["speaker"])
