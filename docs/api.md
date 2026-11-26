@@ -36,7 +36,7 @@ Base: `/api`. Documentação interativa gerada pelo FastAPI em `/docs` (Swagger)
 | Método e rota | Descrição |
 |---|---|
 | `GET /scripts/{id}/render-preview[?background=]` | O que seria enviado: `background, roteiro_chars, edit_list, lines[], problems[], can_send, music_volume, background_volume_supported` |
-| `POST /scripts/{id}/renders` | Envia. Corpo: `{background?, background_asset_id?, intro_asset_id?, outro_asset_id?, music_asset_id?, music_volume?, music_intro_volume?, music_outro_volume?, intro_volume?, outro_volume?, background_volume?, normalize_vignettes?}`. `422` lista os problemas que impedem o envio |
+| `POST /scripts/{id}/renders` | Envia. Corpo: `{narration? (provedor, voz_elevenlabs, modelo_elevenlabs, velocidade 0,7–1,2, estabilidade/similaridade/estilo 0–1, idioma), background?, background_asset_id?, intro_asset_id?, outro_asset_id?, music_asset_id?, music_volume?, music_intro_volume?, music_outro_volume?, intro_volume?, outro_volume?, background_volume?, normalize_vignettes?}`. `422` lista os problemas que impedem o envio |
 | `GET /scripts/{id}/renders?limit=` | Envios do roteiro (mais recentes primeiro) |
 | `GET /renders/{id}` | Estado: `status, stage (comfyui/composing/done), queued, error, has_video, can_remix, music_baked, …` |
 | `POST /renders/{id}/remix` | Refaz só a montagem final. Corpo: `{intro_asset_id?, outro_asset_id?, music_asset_id?, music_volume?, music_intro_volume?, music_outro_volume?, intro_volume?, outro_volume?, normalize_vignettes?}` |

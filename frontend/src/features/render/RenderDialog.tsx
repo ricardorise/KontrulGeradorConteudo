@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
 import { apiUrl } from '../../api/base'
-import type { Render, RenderAsset, RenderPreview, VignetteKind } from '../../api/types'
+import type { Narration, Render, RenderAsset, RenderPreview, VignetteKind } from '../../api/types'
 import { usePolling } from '../../hooks/usePolling'
 import { VignettePicker, formatSeconds } from './VignettePicker'
+import { NarrationSettings } from './NarrationSettings'
 import { VolumeSlider } from './VolumeSlider'
 
 interface Props {
@@ -22,6 +23,14 @@ const remembered = (kind: VignetteKind): string | null => {
     return null
   }
 }
+const rememberedNarration = (): Narration | null => {
+  try {
+    return JSON.parse(localStorage.getItem('narration') ?? 'null')
+  } catch {
+    return null
+  }
+}
+
 const remember = (kind: VignetteKind, id: string | null) => {
   try {
     if (id) localStorage.setItem(`vignette:${kind}`, id)
@@ -79,6 +88,7 @@ export function RenderDialog({ scriptId, onClose, onPublication }: Props) {
   const [outroVolume, setOutroVolume] = useState(1)
   const [backgroundVolume, setBackgroundVolume] = useState(0) // 0 = sem o áudio do vídeo de background
   const [normalize, setNormalize] = useState(true)
+  const [narration, setNarration] = useState<Narration | null>(null) // vem do nó PapoNarration; null até a prévia carregar
   const [remixing, setRemixing] = useState(false)
 
   const render = usePolling(renderId, () => api.getRender(renderId!), active, 4000)
@@ -90,6 +100,7 @@ export function RenderDialog({ scriptId, onClose, onPublication }: Props) {
         if (cancelled) return
         setPreview(p)
         setBackground(p.background)
+        setNarration({ ...p.narration, ...rememberedNarration() })
         if (renders[0]) {
           setRenderId(renders[0].id) // mostra o último envio (e segue acompanhando se ainda roda)
           setIntroVolume(renders[0].intro_volume)
@@ -117,7 +128,13 @@ export function RenderDialog({ scriptId, onClose, onPublication }: Props) {
         normalize,
         musicIntroVolume: musicIntro,
         musicOutroVolume: musicOutro,
+        narration,
       })
+      try {
+        localStorage.setItem('narration', JSON.stringify(narration))
+      } catch {
+        /* sem armazenamento: só não lembra */
+      }
       setRenderId(created.id)
       render.setData(created)
       render.refresh()
@@ -193,6 +210,7 @@ export function RenderDialog({ scriptId, onClose, onPublication }: Props) {
 
         {preview && (
           <>
+            {narration && <NarrationSettings value={narration} onChange={setNarration} />}
             <VignettePicker
               kind="background"
               selectedId={backgroundId}

@@ -1,5 +1,5 @@
 import { apiUrl } from './base'
-import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Publication, PublicationEdit, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
+import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Narration, Publication, PublicationEdit, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
 
 export class ApiError extends Error {}
 
@@ -10,6 +10,7 @@ export interface MixOptions {
   normalize: boolean // nivela o loudness das vinhetas com a fala
   musicIntroVolume: number | null // nível do áudio de fundo na abertura (null = igual ao da fala)
   musicOutroVolume: number | null // ... e no final
+  narration: Narration | null // voz da narração (nó PapoNarration); null mantém a do workflow
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -89,6 +90,7 @@ export const api = {
       normalize_vignettes: mix.normalize ?? true,
       music_intro_volume: musicAssetId ? (mix.musicIntroVolume ?? null) : null,
       music_outro_volume: musicAssetId ? (mix.musicOutroVolume ?? null) : null,
+      narration: mix.narration ?? null,
     }),
   remixRender: (
     renderId: string,

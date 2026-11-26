@@ -5,7 +5,9 @@ import json
 import re
 from typing import Any
 
-from studio.rendering.application.ports import RenderError, RenderSubmission
+from dataclasses import asdict, fields
+
+from studio.rendering.application.ports import NarrationSettings, RenderError, RenderSubmission
 from studio.rendering.domain.render_job import RenderOutput
 
 VIDEO_EXTENSIONS = (".mp4", ".webm", ".mov", ".mkv")
@@ -34,6 +36,8 @@ def fill_workflow(template: dict, submission: RenderSubmission) -> dict:
     _, assets = _single(workflow, "PapoAssets")
     _, youtube_brolls = _single(workflow, "PapoYouTubeBrolls")
 
+    if submission.narration:  # só as entradas de voz; roteiro, arquivos e demais conexões do nó ficam como estão
+        narration["inputs"].update(asdict(submission.narration))
     script_id = _link(narration, "roteiro")
     edit_id = _link(youtube_brolls, "brolls_locais")
     if _link(assets, "brolls_timeline") is None or script_id is None or edit_id is None:
@@ -53,6 +57,18 @@ def fill_workflow(template: dict, submission: RenderSubmission) -> dict:
             _, render = _single(workflow, "PapoRender")
             render["inputs"]["volume_trilha"] = submission.music_volume
     return workflow
+
+
+def default_narration(template: dict) -> NarrationSettings:
+    """Valores atuais do nó PapoNarration (achado por class_type); o que faltar usa o padrão do nó."""
+    _, node = _single(template, "PapoNarration")
+    base = NarrationSettings()
+    values = {}
+    for f in fields(base):
+        raw = node["inputs"].get(f.name)
+        if raw is not None and not isinstance(raw, list):
+            values[f.name] = type(getattr(base, f.name))(raw)
+    return NarrationSettings(**values)
 
 
 def default_background(template: dict) -> str:

@@ -9,6 +9,7 @@ from studio.rendering.application.ports import (
     MediaError,
     MediaProbe,
     MediaStore,
+    NarrationSettings,
     OutputStream,
     RenderError,
     RenderSubmission,
@@ -35,6 +36,7 @@ class RenderPreview:
     plan: EditPlan
     music_volume: float = 0.08
     background_volume_supported: bool = False
+    narration: NarrationSettings = NarrationSettings()
 
 
 class PreviewRender:
@@ -50,6 +52,7 @@ class PreviewRender:
             build_plan(script),
             self._renderer.default_music_volume(),
             self._renderer.supports_background_volume(),
+            self._renderer.default_narration(),
         )
 
 
@@ -151,7 +154,10 @@ class StartRender:
         music_id: UUID | None = None, music_volume: float | None = None, background_id: UUID | None = None,
         *, intro_volume: float = 1.0, outro_volume: float = 1.0, background_volume: float = 0.0,
         normalize_vignettes: bool = True, music_intro_volume: float | None = None, music_outro_volume: float | None = None,
+        narration: NarrationSettings | None = None,
     ) -> RenderJob:  # fmt: skip
+        if narration and (bad := narration.problems()):
+            raise InvalidInput("Voz da narração: " + " ".join(bad))
         preview = await self._preview(script_id, background)
         intro = await self._vignette(intro_id, AssetKind.INTRO)
         outro = await self._vignette(outro_id, AssetKind.OUTRO)
@@ -197,6 +203,7 @@ class StartRender:
                 RenderSubmission(
                     job.roteiro, background_path, job.edit_list, track, volume if track else None,
                     background_volume if preview.background_volume_supported else None,
+                    narration,
                 )
             )
         except RenderError as exc:

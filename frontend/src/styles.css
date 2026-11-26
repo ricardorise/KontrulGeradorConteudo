@@ -273,3 +273,15 @@ button.small { padding: 3px 8px; font-size: 12px; }
 .revise-row input { flex: 1; min-width: 180px; }
 .youtube-btn { background: #c4302b; border-color: #c4302b; color: #fff; }
 .youtube-btn:disabled { opacity: .5; }
+
+/* Voz da narração */
+.narration > summary { cursor: pointer; font-weight: 600; }
+.narration-controls { display: flex; gap: 10px; align-items: center; }
+.narration-controls input[type=range] { flex: 1; }
+.narration-controls input[type=number] { width: 80px; }
+
+/* Voz da narração */
+.narration > summary { cursor: pointer; font-weight: 600; }
+.narration-controls { display: flex; gap: 10px; align-items: center; }
+.narration-controls input[type=range] { flex: 1; }
+.narration-controls input[type=number] { width: 80px; }

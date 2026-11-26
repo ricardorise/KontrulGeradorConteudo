@@ -8,6 +8,7 @@ import httpx
 from studio.infrastructure.comfyui.workflow import (
     default_background,
     default_music_volume,
+    default_narration,
     supports_background_volume,
     extract_video_output,
     fill_workflow,
@@ -38,6 +39,9 @@ class ComfyUiRenderer:
 
     def default_music_volume(self) -> float:
         return default_music_volume(self._template)
+
+    def default_narration(self):
+        return default_narration(self._template)
 
     def supports_background_volume(self) -> bool:
         return supports_background_volume(self._template)

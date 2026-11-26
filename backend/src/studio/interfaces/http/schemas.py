@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import datetime
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from studio.guidance.domain.guideline import Guideline
 from studio.discovery.domain.news_search import NewsItem, NewsSearch
 from studio.scripting.domain.script import BrollSuggestion, Cut, Paragraph, Script
 from studio.publishing.domain.publication import DESCRIPTION_MAX, PRIVACIES, TITLE_MAX, Publication
+from studio.rendering.application.ports import NarrationSettings
 from studio.rendering.application.use_cases import RenderPreview
 from studio.rendering.domain.asset import RenderAsset
 from studio.rendering.domain.render_job import RenderJob
@@ -241,7 +243,28 @@ class GuidelineOut(BaseModel):
         return cls(id=g.id, scope=g.scope.value, text=g.text, active=g.active, source=g.source.value, created_at=g.created_at)
 
 
+class NarrationIO(BaseModel):
+    """Voz da narração (nó PapoNarration). Limites iguais aos de GET /object_info/PapoNarration."""
+
+    provedor: str = Field(default="ElevenLabs", pattern="^(VoiceStudio|ElevenLabs)$")
+    voz_elevenlabs: str = Field(default="", max_length=120)  # vazio = voz padrão do servidor
+    modelo_elevenlabs: str = Field(default="eleven_multilingual_v2", pattern="^(eleven_multilingual_v2|eleven_flash_v2_5)$")
+    velocidade_elevenlabs: float = Field(default=1.08, ge=0.7, le=1.2)
+    estabilidade_elevenlabs: float = Field(default=0.30, ge=0, le=1)
+    similaridade_elevenlabs: float = Field(default=0.73, ge=0, le=1)
+    estilo_elevenlabs: float = Field(default=0.74, ge=0, le=1)
+    idioma_elevenlabs: str = Field(default="pt", min_length=2, max_length=12)
+
+    def to_domain(self) -> NarrationSettings:
+        return NarrationSettings(**self.model_dump())
+
+    @classmethod
+    def of(cls, n: NarrationSettings) -> "NarrationIO":
+        return cls(**asdict(n))
+
+
 class RenderIn(BaseModel):
+    narration: NarrationIO | None = None  # None = mantém a voz do workflow
     background: str | None = Field(default=None, max_length=300)
     intro_asset_id: UUID | None = None  # vinheta de abertura (a fala só começa depois dela)
     outro_asset_id: UUID | None = None  # vinheta final
@@ -284,6 +307,7 @@ class RenderPreviewOut(BaseModel):
     can_send: bool
     music_volume: float
     background_volume_supported: bool
+    narration: NarrationIO  # valores atuais do nó PapoNarration (ponto de partida da tela)
 
     @classmethod
     def of(cls, preview: "RenderPreview") -> "RenderPreviewOut":
@@ -293,6 +317,7 @@ class RenderPreviewOut(BaseModel):
             lines=[EditLineOut(order=l.order, paragraph=l.paragraph, text=l.render(), phrase=l.phrase) for l in plan.lines],
             problems=plan.problems, can_send=not plan.problems, music_volume=preview.music_volume,
             background_volume_supported=preview.background_volume_supported,
+            narration=NarrationIO.of(preview.narration),
         )  # fmt: skip
 
 

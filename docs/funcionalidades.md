@@ -73,6 +73,20 @@ O envio é bloqueado quando um corte:
 - tem trecho que aparece **mais de uma vez** no roteiro;
 - tem o caractere `|` no trecho.
 
+### Voz da narração
+Bloco recolhível **Voz da narração** no diálogo, que preenche as entradas do nó `PapoNarration` (localizado por `class_type`, não por id; roteiro, arquivos, conexões e demais entradas são preservados):
+
+| Campo | Valores |
+|---|---|
+| Provedor | ElevenLabs ou VoiceStudio |
+| Voz da ElevenLabs | texto; **vazio = voz padrão do servidor** |
+| Modelo | `eleven_multilingual_v2` ou `eleven_flash_v2_5` |
+| Velocidade | 0,7 a 1,2 |
+| Estabilidade / Similaridade / Estilo | 0 a 1 |
+| Idioma | código (ex.: `pt`) |
+
+Controles de passo 0,01. A tela começa com os valores atuais do workflow, lembra a última escolha e tem **Restaurar padrões do nó** (voz vazia, 1,08 / 0,30 / 0,73 / 0,74, `pt`). Limites validados na tela e no servidor. A chave da ElevenLabs fica só no servidor do ComfyUI.
+
 ### Mídias e níveis de áudio
 Tudo é enviado por upload na própria tela (as escolhas ficam lembradas):
 

@@ -31,6 +31,7 @@ async def start_render(script_id: UUID, uc: UC, body: RenderIn | None = None) ->
             normalize_vignettes=body.normalize_vignettes if body else True,
             music_intro_volume=body.music_intro_volume if body else None,
             music_outro_volume=body.music_outro_volume if body else None,
+            narration=body.narration.to_domain() if body and body.narration else None,
         )
     )  # fmt: skip
 

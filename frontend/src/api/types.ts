@@ -195,7 +195,19 @@ export interface Conversation {
   messages: Message[]
 }
 
+export interface Narration {
+  provedor: 'ElevenLabs' | 'VoiceStudio'
+  voz_elevenlabs: string
+  modelo_elevenlabs: 'eleven_multilingual_v2' | 'eleven_flash_v2_5'
+  velocidade_elevenlabs: number
+  estabilidade_elevenlabs: number
+  similaridade_elevenlabs: number
+  estilo_elevenlabs: number
+  idioma_elevenlabs: string
+}
+
 export interface RenderPreview {
+  narration: Narration
   background: string
   roteiro_chars: number
   edit_list: string

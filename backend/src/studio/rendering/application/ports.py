@@ -13,6 +13,42 @@ class RenderError(Exception):
 
 
 @dataclass(frozen=True)
+class NarrationSettings:
+    """Entradas do nó PapoNarration (voz ElevenLabs). A chave da ElevenLabs fica só no servidor do ComfyUI."""
+
+    provedor: str = "ElevenLabs"
+    voz_elevenlabs: str = ""  # vazio = voz padrão do servidor
+    modelo_elevenlabs: str = "eleven_multilingual_v2"
+    velocidade_elevenlabs: float = 1.08
+    estabilidade_elevenlabs: float = 0.30
+    similaridade_elevenlabs: float = 0.73
+    estilo_elevenlabs: float = 0.74
+    idioma_elevenlabs: str = "pt"
+
+    PROVIDERS = ("VoiceStudio", "ElevenLabs")
+    MODELS = ("eleven_multilingual_v2", "eleven_flash_v2_5")
+    LIMITS = {
+        "velocidade_elevenlabs": (0.7, 1.2),
+        "estabilidade_elevenlabs": (0.0, 1.0),
+        "similaridade_elevenlabs": (0.0, 1.0),
+        "estilo_elevenlabs": (0.0, 1.0),
+    }
+
+    def problems(self) -> list[str]:
+        found = []
+        if self.provedor not in self.PROVIDERS:
+            found.append(f"Provedor de voz inválido: {self.provedor}.")
+        if self.modelo_elevenlabs not in self.MODELS:
+            found.append(f"Modelo de voz inválido: {self.modelo_elevenlabs}.")
+        for name, (low, high) in self.LIMITS.items():
+            if not low <= getattr(self, name) <= high:
+                found.append(f"{name} deve ficar entre {low} e {high}.")
+        if not self.idioma_elevenlabs.strip():
+            found.append("Informe o idioma da voz (ex.: pt).")
+        return found
+
+
+@dataclass(frozen=True)
 class RenderSubmission:
     roteiro: str
     background: str
@@ -20,6 +56,7 @@ class RenderSubmission:
     music: str | None = None  # caminho da trilha dentro da pasta input do ComfyUI
     music_volume: float | None = None
     background_volume: float | None = None  # volume_fundo: áudio do vídeo de background
+    narration: NarrationSettings | None = None  # None preserva a voz do workflow
 
 
 @dataclass(frozen=True)
@@ -43,6 +80,8 @@ class VideoRenderer(Protocol):
     def default_music_volume(self) -> float: ...
 
     def supports_background_volume(self) -> bool: ...
+
+    def default_narration(self) -> NarrationSettings: ...
 
     async def upload_input(self, path: Path, subfolder: str, name: str) -> str:
         """Envia um arquivo à pasta input do ComfyUI e devolve o caminho relativo (subpasta/nome)."""

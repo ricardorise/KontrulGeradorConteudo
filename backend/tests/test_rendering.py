@@ -5,7 +5,8 @@ import httpx
 import pytest
 
 from studio.infrastructure.comfyui.renderer import DEFAULT_WORKFLOW, ComfyUiRenderer
-from studio.infrastructure.comfyui.workflow import default_background, extract_video_output, fill_workflow
+from studio.rendering.application.ports import NarrationSettings
+from studio.infrastructure.comfyui.workflow import default_narration, default_background, extract_video_output, fill_workflow
 from studio.rendering.application.ports import OutputStream, RenderError, RenderProgress, RenderSubmission
 from studio.rendering.application.use_cases import (
     OpenRenderVideo,
@@ -108,6 +109,9 @@ class FakeRenderer:
 
     def supports_background_volume(self):
         return True
+
+    def default_narration(self):
+        return NarrationSettings()
 
     async def upload_input(self, path, subfolder, name):
         self.uploads = getattr(self, "uploads", []) + [(path.name, subfolder, name)]
@@ -301,3 +305,46 @@ def test_plan_blocks_phrases_with_digits_or_symbols():
     plan = build_plan(roteiro)
     assert len(plan.problems) == 2 and all("número ou símbolo" in p for p in plan.problems)
     assert [l.phrase for l in plan.lines] == ["Fim."]
+
+
+def test_narration_settings_fill_only_voice_inputs_found_by_class_type():
+    import copy
+    import json
+    from dataclasses import replace
+
+    from studio.infrastructure.comfyui.renderer import DEFAULT_WORKFLOW
+
+    template = json.loads(open(DEFAULT_WORKFLOW, encoding="utf-8").read())
+    # renumerar o nó não pode quebrar: localizado por class_type
+    renumbered = {("99" if n.get("class_type") == "PapoNarration" else k): n for k, n in copy.deepcopy(template).items()}
+    for n in renumbered.values():
+        for key, value in n["inputs"].items():
+            if isinstance(value, list) and value[0] == next(k for k, v in template.items() if v["class_type"] == "PapoNarration"):
+                n["inputs"][key] = ["99", value[1]]
+    settings = replace(default_narration(template), voz_elevenlabs="", velocidade_elevenlabs=1.15, estilo_elevenlabs=0.5)
+    filled = fill_workflow(renumbered, RenderSubmission("R", "b.mp4", "L", narration=settings))["99"]["inputs"]
+    assert (filled["voz_elevenlabs"], filled["velocidade_elevenlabs"], filled["estilo_elevenlabs"]) == ("", 1.15, 0.5)
+    original = renumbered["99"]["inputs"]
+    for kept in ("roteiro", "arquivos", "voz_salva", "descricao_voz", "seed", "idioma"):
+        assert filled[kept] == original[kept]  # demais inputs e conexões preservados
+    untouched = fill_workflow(renumbered, RenderSubmission("R", "b.mp4", "L"))["99"]["inputs"]
+    assert untouched["voz_elevenlabs"] == original["voz_elevenlabs"]  # sem narration, preserva a voz do workflow
+
+
+def test_narration_limits_are_validated():
+    assert NarrationSettings().problems() == []
+    assert NarrationSettings(velocidade_elevenlabs=1.3).problems()
+    assert NarrationSettings(velocidade_elevenlabs=0.69).problems()
+    assert NarrationSettings(estilo_elevenlabs=1.01).problems()
+    assert NarrationSettings(modelo_elevenlabs="x").problems()
+    assert NarrationSettings(velocidade_elevenlabs=1.2, estabilidade_elevenlabs=0).problems() == []
+
+
+def test_narration_http_bounds():
+    from studio.interfaces.http.schemas import NarrationIO
+    import pydantic
+
+    assert NarrationIO().to_domain() == NarrationSettings()
+    for bad in ({"velocidade_elevenlabs": 1.21}, {"estabilidade_elevenlabs": -0.01}, {"provedor": "Outro"}):
+        with pytest.raises(pydantic.ValidationError):
+            NarrationIO(**bad)

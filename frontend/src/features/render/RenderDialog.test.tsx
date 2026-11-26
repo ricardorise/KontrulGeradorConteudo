@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { api } from '../../api/client'
 import type { Render, RenderAsset, RenderPreview } from '../../api/types'
 import { RenderDialog } from './RenderDialog'
+import { NODE_DEFAULTS } from './NarrationSettings'
 
 vi.mock('../../api/client', () => ({
   api: {
@@ -13,7 +14,7 @@ vi.mock('../../api/client', () => ({
 const preview = (over: Partial<RenderPreview> = {}): RenderPreview => ({
   background: 'papotechcast/Background2.mp4', roteiro_chars: 1500, can_send: true, problems: [],
   music_volume: 0.08, background_volume_supported: true, edit_list: 'https://www.youtube.com/watch?v=abc#t=1,5 | frase:Abertura | 4',
-  lines: [{ order: 1, paragraph: 1, text: 'x', phrase: 'Abertura' }], ...over,
+  lines: [{ order: 1, paragraph: 1, text: 'x', phrase: 'Abertura' }], narration: NODE_DEFAULTS, ...over,
 })
 const job = (over: Partial<Render> = {}): Render => ({
   id: 'r1', script_id: 's1', status: 'running', queued: false, prompt_id: 'p', background: 'b', edit_list: 'e', error: null,
@@ -43,7 +44,7 @@ test('mostra a lista de edição e envia com o background informado', async () =
   expect(await screen.findByLabelText('Lista de edição')).toHaveTextContent('frase:Abertura | 4')
   fireEvent.change(screen.getByLabelText(/caminho do vídeo já existente/), { target: { value: 'papotechcast/Outro.mp4' } })
   fireEvent.click(screen.getByRole('button', { name: 'Enviar para o ComfyUI' }))
-  await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Outro.mp4', null, null, null, null, null, { introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: null, musicOutroVolume: null }))
+  await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Outro.mp4', null, null, null, null, null, { introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: null, musicOutroVolume: null, narration: NODE_DEFAULTS }))
   expect(await screen.findByText(/Na fila do ComfyUI/)).toBeInTheDocument()
 })
 
@@ -95,7 +96,7 @@ test('envia a abertura e o final, escolhe os vídeos e manda os ids ao ComfyUI',
   expect(screen.getByLabelText('Ordem do vídeo final')).toHaveTextContent('Abertura (6,0 s) → vídeo com a fala → Final (5,0 s)')
   expect(screen.getByLabelText('Ordem do vídeo final')).toHaveTextContent('A fala começa só depois da abertura')
   fireEvent.click(screen.getByRole('button', { name: 'Enviar para o ComfyUI' }))
-  await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Background2.mp4', 'a1', 'a2', null, null, null, { introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: null, musicOutroVolume: null }))
+  await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Background2.mp4', 'a1', 'a2', null, null, null, { introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: null, musicOutroVolume: null, narration: NODE_DEFAULTS }))
   expect(localStorage.getItem('vignette:intro')).toBe('a1') // lembra a escolha para a próxima vez
 })
 
@@ -139,7 +140,7 @@ test('áudio de fundo: envia o áudio, ajusta o volume e manda tudo ao ComfyUI',
   expect(slider).toHaveValue('8') // padrão do workflow
   fireEvent.change(slider, { target: { value: '20' } })
   fireEvent.click(screen.getByRole('button', { name: 'Enviar para o ComfyUI' }))
-  await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Background2.mp4', null, null, 'm1', 0.2, null, { introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: null, musicOutroVolume: null }))
+  await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Background2.mp4', null, null, 'm1', 0.2, null, { introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: null, musicOutroVolume: null, narration: NODE_DEFAULTS }))
 })
 
 
@@ -159,7 +160,7 @@ test('background: envia o vídeo, o campo de caminho fica desativado e o id vai 
   await waitFor(() => expect(api.uploadRenderAsset).toHaveBeenCalledWith('background', file))
   await waitFor(() => expect(screen.getByLabelText(/caminho do vídeo já existente/)).toBeDisabled())
   fireEvent.click(screen.getByRole('button', { name: 'Enviar para o ComfyUI' }))
-  await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Background2.mp4', null, null, null, null, 'b1', { introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: null, musicOutroVolume: null }))
+  await waitFor(() => expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Background2.mp4', null, null, null, null, 'b1', { introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: null, musicOutroVolume: null, narration: NODE_DEFAULTS }))
 })
 
 test('volumes da abertura, do final e do background e o nivelamento vão no envio', async () => {
@@ -182,7 +183,7 @@ test('volumes da abertura, do final e do background e o nivelamento vão no envi
   fireEvent.click(screen.getByRole('button', { name: 'Enviar para o ComfyUI' }))
   await waitFor(() =>
     expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Background2.mp4', 'a1', 'a2', null, null, null, {
-      introVolume: 0.6, outroVolume: 0, backgroundVolume: 0.25, normalize: false, musicIntroVolume: null, musicOutroVolume: null,
+      introVolume: 0.6, outroVolume: 0, backgroundVolume: 0.25, normalize: false, musicIntroVolume: null, musicOutroVolume: null, narration: NODE_DEFAULTS,
     }),
   )
 })
@@ -262,7 +263,7 @@ test('um áudio de fundo, três níveis: abertura, fala e final', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Enviar para o ComfyUI' }))
   await waitFor(() =>
     expect(api.startRender).toHaveBeenCalledWith('s1', 'papotechcast/Background2.mp4', 'a1', 'a2', 'm1', 0.05, null, {
-      introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: 0.5, musicOutroVolume: 0.3,
+      introVolume: 1, outroVolume: 1, backgroundVolume: 0, normalize: true, musicIntroVolume: 0.5, musicOutroVolume: 0.3, narration: NODE_DEFAULTS,
     }),
   )
 })
@@ -304,4 +305,21 @@ test('com vídeo pronto, abre a página de publicação no YouTube', async () =>
   fireEvent.click(await screen.findByRole('button', { name: 'Preparar publicação no YouTube' }))
   await waitFor(() => expect(onPublication).toHaveBeenCalledWith('pub1'))
   expect(api.preparePublication).toHaveBeenCalledWith('r1')
+})
+
+test('edita a voz da narração (com limites) e envia no pedido', async () => {
+  vi.mocked(api.renderPreview).mockResolvedValue(preview({ narration: { ...NODE_DEFAULTS, voz_elevenlabs: 'Rafael PapotechCast High' } }))
+  vi.mocked(api.listRenders).mockResolvedValue([])
+  vi.mocked(api.startRender).mockResolvedValue(job({ queued: true }))
+  vi.mocked(api.getRender).mockResolvedValue(job({ queued: true }))
+  render(<RenderDialog scriptId="s1" onClose={() => {}} />)
+  expect(await screen.findByText(/Rafael PapotechCast High/)).toBeInTheDocument() // valor atual do nó
+  fireEvent.change(screen.getByLabelText(/Voz da ElevenLabs/), { target: { value: '' } })
+  fireEvent.change(screen.getByLabelText('Velocidade'), { target: { value: '5' } }) // acima do limite: vira 1.2
+  fireEvent.change(screen.getByLabelText('Estilo'), { target: { value: '0.5' } })
+  fireEvent.change(screen.getByLabelText(/caminho do vídeo já existente/), { target: { value: 'papotechcast/B.mp4' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar para o ComfyUI' }))
+  await waitFor(() => expect(api.startRender).toHaveBeenCalled())
+  const mix = vi.mocked(api.startRender).mock.calls[0][7]
+  expect(mix?.narration).toMatchObject({ voz_elevenlabs: '', velocidade_elevenlabs: 1.2, estilo_elevenlabs: 0.5, provedor: 'ElevenLabs' })
 })
