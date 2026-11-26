@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from studio.conversation.domain.conversation import ActionOutcome, Conversation, Message
 from studio.guidance.domain.guideline import Guideline
 from studio.discovery.domain.news_search import NewsItem, NewsSearch
+from studio.scripting.application.catalog import ScriptEntry
 from studio.scripting.domain.config import ScriptProfile
 from studio.scripting.domain.script import BrollSuggestion, Cut, Paragraph, Script
 from studio.publishing.domain.publication import DESCRIPTION_MAX, PRIVACIES, TITLE_MAX, Publication
@@ -175,6 +176,27 @@ class ScriptConfigIn(BaseModel):
 class ScriptIn(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
     config: ScriptConfigIn | None = None
+
+
+class ScriptEntryOut(BaseModel):
+    script_id: UUID
+    news_item_id: UUID
+    search_id: UUID
+    news_title: str
+    topic: str
+    script_title: str | None
+    status: str
+    created_at: datetime
+    paragraphs: int
+    profile_name: str | None
+    duration_minutes: int | None
+    presenters: list[str]
+    videos_done: int
+    publication_status: str | None
+
+    @classmethod
+    def of(cls, e: "ScriptEntry") -> "ScriptEntryOut":
+        return cls(**{**asdict(e), "presenters": list(e.presenters)})
 
 
 class ScriptProfileOut(BaseModel):

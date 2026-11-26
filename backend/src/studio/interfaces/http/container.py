@@ -28,6 +28,7 @@ from studio.rendering.application.use_cases import (
     StartRender,
     UploadRenderAsset,
 )
+from studio.scripting.application.catalog import ListScripts
 from studio.scripting.application.use_cases import (
     AddBroll,
     AddCut,
@@ -51,6 +52,7 @@ class UseCases:
     get_news_search: GetNewsSearch
     list_news_searches: ListNewsSearches
     start_script: StartScriptGeneration
+    list_scripts: ListScripts
     script_options: ScriptConfigOptions
     add_script_profile: AddScriptProfile
     delete_script_profile: DeleteScriptProfile

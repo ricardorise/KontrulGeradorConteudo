@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from studio.interfaces.http.container import UseCases
 from studio.shared.domain.errors import InvalidInput
@@ -12,6 +12,7 @@ from studio.interfaces.http.schemas import (
     CutExcerptIn,
     CutIn,
     DurationOut,
+    ScriptEntryOut,
     ScriptIn,
     ScriptOptionsOut,
     ScriptOut,
@@ -33,6 +34,12 @@ async def generate_script(
         cfg = body.config
         config = await uc.script_options.build(cfg.profile_id, cfg.duration_minutes, cfg.presenters)
     return ScriptOut.of(await uc.start_script(news_item_id, force, body.instructions if body else None, config))
+
+
+@router.get("/scripts", response_model=list[ScriptEntryOut])
+async def list_scripts(uc: UC, limit: int = Query(100, ge=1, le=300)) -> list[ScriptEntryOut]:
+    """Histórico: assuntos que já tiveram roteiro, do mais recente ao mais antigo."""
+    return [ScriptEntryOut.of(e) for e in await uc.list_scripts(limit)]
 
 
 @router.get("/script-options", response_model=ScriptOptionsOut)

@@ -1,5 +1,5 @@
 import { apiUrl } from './base'
-import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Narration, Publication, ScriptConfigInput, ScriptOptions, ScriptProfile, PublicationEdit, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
+import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Narration, Publication, ScriptConfigInput, ScriptEntry, ScriptOptions, ScriptProfile, PublicationEdit, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
 
 export class ApiError extends Error {}
 
@@ -42,6 +42,7 @@ export const api = {
 
   generateScript: (newsItemId: string, force = false, config?: ScriptConfigInput) =>
     post<Script>(`/news-items/${newsItemId}/script${force ? '?force=true' : ''}`, config ? { config } : undefined),
+  listScripts: () => request<ScriptEntry[]>('/scripts?limit=150'),
   scriptOptions: () => request<ScriptOptions>('/script-options'),
   addScriptProfile: (name: string, instructions: string, description = '') =>
     post<ScriptProfile>('/script-profiles', { name, instructions, description }),

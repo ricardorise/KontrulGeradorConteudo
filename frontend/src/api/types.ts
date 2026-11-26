@@ -102,6 +102,23 @@ export interface ScriptConfigUsed {
   presenters: string[]
 }
 
+export interface ScriptEntry {
+  script_id: string
+  news_item_id: string
+  search_id: string
+  news_title: string
+  topic: string
+  script_title: string | null
+  status: JobStatus
+  created_at: string
+  paragraphs: number
+  profile_name: string | null
+  duration_minutes: number | null
+  presenters: string[]
+  videos_done: number
+  publication_status: string | null
+}
+
 export interface ScriptProfile {
   id: string
   name: string

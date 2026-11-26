@@ -35,6 +35,7 @@ from studio.infrastructure.persistence.render_asset_repository import PostgresRe
 from studio.infrastructure.persistence.render_repository import PostgresRenderJobRepository
 from studio.infrastructure.persistence.render_script_source import ScriptingScriptSourceReader
 from studio.infrastructure.persistence.script_repository import PostgresScriptRepository
+from studio.infrastructure.persistence.script_catalog import PostgresScriptCatalog
 from studio.infrastructure.persistence.script_profile_repository import PostgresScriptProfileRepository
 from studio.infrastructure.studio_gateway import StudioUseCaseGateway
 from studio.infrastructure.youtube.oembed import YoutubeOEmbed
@@ -67,6 +68,7 @@ from studio.rendering.application.use_cases import (
     resume_active,
 )
 from studio.shared.domain.bots import Bot
+from studio.scripting.application.catalog import ListScripts
 from studio.scripting.application.use_cases import (
     AddBroll,
     AddCut,
@@ -155,6 +157,7 @@ def create_app() -> FastAPI:
             get_news_search=get_news_search,
             list_news_searches=ListNewsSearches(news_repo),
             start_script=start_script,
+            list_scripts=ListScripts(PostgresScriptCatalog(pool)),
             script_options=ScriptConfigOptions(profile_repo),
             add_script_profile=AddScriptProfile(profile_repo),
             delete_script_profile=DeleteScriptProfile(profile_repo),

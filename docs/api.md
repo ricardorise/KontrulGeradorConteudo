@@ -18,6 +18,7 @@ Base: `/api`. Documentação interativa gerada pelo FastAPI em `/docs` (Swagger)
 | Método e rota | Descrição |
 |---|---|
 | `POST /news-items/{id}/script[?force=true]` | Gera o roteiro (idempotente). Corpo opcional `{instructions?, config?: {profile_id, duration_minutes (5/8/12/20), presenters (0–2 nomes)}}` gera um novo |
+| `GET /scripts?limit=` | Histórico de roteiros (assunto, busca de origem, perfil/tempo/apresentadores, vídeos prontos, estado da publicação) |
 | `GET /script-options` | Perfis (básicos + cadastrados) e tempos (`minutes`, `max_chars`) |
 | `POST /script-profiles` | Cadastra perfil: `{name, instructions, description?}` (`409` se o nome já existe) |
 | `DELETE /script-profiles/{id}` | Apaga perfil cadastrado (os básicos não podem) |

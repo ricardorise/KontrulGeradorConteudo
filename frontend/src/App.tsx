@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { api } from './api/client'
-import type { ChatAction, NewsSearch, RadarSearchOptions, Script, ScriptConfigInput } from './api/types'
+import type { ChatAction, ScriptEntry, NewsSearch, RadarSearchOptions, Script, ScriptConfigInput } from './api/types'
 import { ChatPanel } from './features/chat/ChatPanel'
 import { GuidelinesPanel } from './features/guidance/GuidelinesPanel'
 import { NewsList } from './features/news/NewsList'
 import { SearchBar } from './features/news/SearchBar'
 import { SearchHistory } from './features/news/SearchHistory'
 import { PublicationView } from './features/publication/PublicationView'
+import { ScriptHistory } from './features/script/ScriptHistory'
 import { ScriptConfigPanel } from './features/script/ScriptConfigPanel'
 import { ScriptView } from './features/script/ScriptView'
 import { usePolling } from './hooks/usePolling'
@@ -26,6 +27,7 @@ export function App() {
   const [publicationVersion, setPublicationVersion] = useState(0)
   const [configItemId, setConfigItemId] = useState<string | null>(null) // notícia cuja "Configuração do roteiro" está aberta
   const [generating, setGenerating] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -61,6 +63,17 @@ export function App() {
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Falha ao iniciar a busca')
     }
+  }
+
+  // Abre um roteiro do histórico: mostra a busca de origem (lista de notícias) e o roteiro.
+  const openFromHistory = (entry: ScriptEntry) => {
+    setShowHistory(false)
+    setActionError(null)
+    setPublicationId(null)
+    setConfigItemId(null)
+    setSearchId(entry.search_id)
+    setItemId(entry.news_item_id)
+    setScriptId(entry.script_id)
   }
 
   const openSearch = (id: string) => {
@@ -144,6 +157,9 @@ export function App() {
       <header className="topbar">
         <h1>Gerador de Conteúdo</h1>
         <SearchBar busy={!!search.data && searchRunning(search.data)} onSearch={startSearch} />
+        <button className="secondary" onClick={() => setShowHistory(true)}>
+          Roteiros criados
+        </button>
         <button className="secondary" onClick={() => setShowGuidelines(true)}>
           Orientações
         </button>
@@ -196,6 +212,7 @@ export function App() {
 
         <ChatPanel context={{ search_id: searchId, script_id: scriptId, publication_id: publicationId }} onActions={applyChatActions} />
       </main>
+      {showHistory && <ScriptHistory onOpen={openFromHistory} onClose={() => setShowHistory(false)} />}
       {showGuidelines && <GuidelinesPanel refreshKey={guidelinesVersion} onClose={() => setShowGuidelines(false)} />}
     </div>
   )

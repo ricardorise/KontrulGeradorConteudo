@@ -20,6 +20,9 @@ Se o tema contiver a palavra **"radar"**, aparecem as configurações do Radar:
 
 - Clique numa notícia: se ela já tem roteiro, ele reabre; se não, abre a **Configuração do roteiro** (abaixo) e **Gerar roteiro** cria o texto. O **Jules Verne** escreve parágrafos curtos para narração, usando **só** o material do Tonton (não inventa dados). **Gerar novo roteiro** (no topo do roteiro) reabre a configuração.
 
+### Roteiros criados (histórico)
+O botão **Roteiros criados**, no topo, lista todos os assuntos que já tiveram roteiro (mais recentes primeiro): notícia, título do roteiro, data, parágrafos, perfil/tempo/apresentadores, se já tem **vídeo pronto** e a situação da **publicação no YouTube**, além da busca de origem. Há filtro por assunto; clicar abre a busca e o roteiro direto, sem procurar nas buscas.
+
 ### Configuração do roteiro
 Três escolhas antes de gerar (a última fica lembrada):
 
