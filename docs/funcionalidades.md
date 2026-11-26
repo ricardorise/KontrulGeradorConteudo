@@ -18,8 +18,21 @@ Se o tema contiver a palavra **"radar"**, aparecem as configurações do Radar:
 
 ## 2. Roteiro (Jules Verne)
 
-- Clique numa notícia para gerar o roteiro. O **Jules Verne** escreve de 6 a 10 parágrafos curtos para narração, usando **só** o material do Tonton (não inventa dados).
-- É **idempotente**: clicar de novo na mesma notícia reabre o roteiro existente. **Gerar novo roteiro** cria outro.
+- Clique numa notícia: se ela já tem roteiro, ele reabre; se não, abre a **Configuração do roteiro** (abaixo) e **Gerar roteiro** cria o texto. O **Jules Verne** escreve parágrafos curtos para narração, usando **só** o material do Tonton (não inventa dados). **Gerar novo roteiro** (no topo do roteiro) reabre a configuração.
+
+### Configuração do roteiro
+Três escolhas antes de gerar (a última fica lembrada):
+
+| Área | Opções |
+|---|---|
+| **Perfil do roteirista** (obrigatório) | Jornalístico & Investigativo · Storytelling & Curiosidades · Tech & Analítico · Opinião & Debate Construtivo · **+ Cadastrar novo perfil** (nome, resumo e "como o roteirista deve escrever"; só os seus perfis podem ser apagados) |
+| **Tempo de roteiro** (obrigatório) | 5 min = 630 caracteres · 8 min = 800 · 12 min = 1200 · 20 min = 2000 |
+| **Apresentadores** | **Um** (nome opcional) ou **dois** (dois nomes diferentes; o roteiro vem com a fala separada por apresentador) |
+
+- O limite de caracteres vale para **todo o texto falado** (soma dos parágrafos, sem contar os nomes). O Jules Verne mira entre 85% e 100% do limite; se passar de 105%, ele é chamado de novo para encurtar e, se ainda passar, o roteiro falha com a explicação.
+- Com dois apresentadores cada parágrafo mostra quem fala (etiqueta colorida). O texto enviado ao ComfyUI **não inclui os nomes** (a narração usa uma voz só).
+- A configuração usada aparece sobre o roteiro (perfil · minutos · caracteres usados/limite · apresentadores) e fica salva com ele.
+- Pedir roteiro **pelo chat** continua funcionando, sem esta configuração (perfil/tempo/apresentadores só pela tela).
 - Ao gerar pelo chat com instruções (ex.: "no máximo 5 parágrafos, tom informal"), as instruções valem para aquele roteiro e ficam registradas.
 - A tela **segue o roteiro mais novo da notícia**: se outro for criado (pelo chat, outra aba), ela troca sozinha e avisa "Roteiro atualizado".
 

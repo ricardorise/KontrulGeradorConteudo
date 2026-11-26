@@ -9,7 +9,7 @@ Tudo fica salvo no PostgreSQL (`kontrul-postgres-1`, schema `content_studio`).
 ## O que ele faz
 
 - **Busca de notícias** por tema, com título, descrição e análise de fontes. Modo **Radar** (escopo, janela de 24 h–7 dias) que cruza Tonton, Youtoba e tendências.
-- **Roteiro** de narração gerado a partir da notícia, com instruções pontuais ("mais curto", "tom informal").
+- **Configuração do roteiro** (perfil do roteirista, tempo com limite de caracteres, um ou dois apresentadores) e **roteiro** de narração gerado a partir da notícia, com instruções pontuais ("mais curto", "tom informal").
 - **B-roll** do YouTube ao lado de cada parágrafo.
 - **Editor de cortes**: player do YouTube com timeline, intervalo por alças, duplo clique para registrar, vínculo do corte com um **trecho do texto** (âncora) e exportação em CSV/JSON.
 - **Publicação no YouTube**: Jules Verne escreve a descrição, Youtoba cria título e tags, a página mostra o resumo completo (com links), aceita alterações pelo chat e tem o botão **Publicar** (privado/não listado; quem envia é o Sniper).

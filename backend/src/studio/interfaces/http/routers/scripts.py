@@ -6,7 +6,18 @@ from fastapi import APIRouter, Depends
 from studio.interfaces.http.container import UseCases
 from studio.shared.domain.errors import InvalidInput
 from studio.interfaces.http.deps import use_cases
-from studio.interfaces.http.schemas import BrollIn, BrollRetryIn, CutExcerptIn, CutIn, ScriptIn, ScriptOut
+from studio.interfaces.http.schemas import (
+    BrollIn,
+    BrollRetryIn,
+    CutExcerptIn,
+    CutIn,
+    DurationOut,
+    ScriptIn,
+    ScriptOptionsOut,
+    ScriptOut,
+    ScriptProfileIn,
+    ScriptProfileOut,
+)
 
 router = APIRouter(tags=["scripts"])
 UC = Annotated[UseCases, Depends(use_cases)]
@@ -17,7 +28,30 @@ async def generate_script(
     news_item_id: UUID, uc: UC, body: ScriptIn | None = None, force: bool = False
 ) -> ScriptOut:
     """Idempotente: devolve o roteiro existente; `force=true` ou `instructions` geram um novo."""
-    return ScriptOut.of(await uc.start_script(news_item_id, force, body.instructions if body else None))
+    config = None
+    if body and body.config:
+        cfg = body.config
+        config = await uc.script_options.build(cfg.profile_id, cfg.duration_minutes, cfg.presenters)
+    return ScriptOut.of(await uc.start_script(news_item_id, force, body.instructions if body else None, config))
+
+
+@router.get("/script-options", response_model=ScriptOptionsOut)
+async def script_options(uc: UC) -> ScriptOptionsOut:
+    """Opções da "Configuração do roteiro": perfis de roteirista (básicos e cadastrados) e tempos de vídeo."""
+    return ScriptOptionsOut(
+        profiles=[ScriptProfileOut.of(p) for p in await uc.script_options.profiles()],
+        durations=[DurationOut(minutes=m, max_chars=c) for m, c in uc.script_options.durations.items()],
+    )
+
+
+@router.post("/script-profiles", response_model=ScriptProfileOut, status_code=201)
+async def add_script_profile(body: ScriptProfileIn, uc: UC) -> ScriptProfileOut:
+    return ScriptProfileOut.of(await uc.add_script_profile(body.name, body.instructions, body.description))
+
+
+@router.delete("/script-profiles/{profile_id}", status_code=204)
+async def delete_script_profile(profile_id: str, uc: UC) -> None:
+    await uc.delete_script_profile(profile_id)
 
 
 @router.get("/news-items/{news_item_id}/script", response_model=ScriptOut | None)

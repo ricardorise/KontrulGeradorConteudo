@@ -7,6 +7,7 @@ import { formatClock } from './timeline'
 
 interface Props {
   paragraph: Paragraph
+  speakerIndex?: number // 0 ou 1 quando o roteiro tem dois apresentadores
   brollStatus: JobStatus
   cuts: Cut[]
   onAddCut: (paragraphId: string, broll: Broll, start: number, end: number, text: TextRange | null) => Promise<void>
@@ -25,7 +26,7 @@ interface Props {
 }
 
 export function ParagraphRow({
-  paragraph, brollStatus, cuts, onAddCut, onDeleteCut, onSetCutExcerpt,
+  paragraph, speakerIndex, brollStatus, cuts, onAddCut, onDeleteCut, onSetCutExcerpt,
   onAddBroll, onReplaceBroll, onRemoveBroll, onRetryParagraph, retryDisabled = false,
   selecting = false, selected = false, onToggleSelect, autoOpenBrollId = null,
 }: Props) {  // fmt: skip
@@ -75,6 +76,7 @@ export function ParagraphRow({
       <div className="paragraph-block">
         <p className="paragraph-text">
           <span className="paragraph-number">{paragraph.position + 1}</span>
+          {paragraph.speaker && <span className={`speaker-tag${speakerIndex === 1 ? ' second' : ''}`}>{paragraph.speaker}:</span>}
           <span ref={body} className="paragraph-body" onMouseUp={captureSelection} onKeyUp={captureSelection}>
             {segments.map((s, i) =>
               s.kind === 'plain' ? (

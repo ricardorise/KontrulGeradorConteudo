@@ -134,6 +134,18 @@ export function ScriptView({ script, error, onChanged, onCutsChanged, onRetryScr
           )}
         </div>
       </header>
+      {script.config && (
+        <p className="muted script-meta" aria-label="Configuração usada">
+          {[
+            script.config.profile_name,
+            script.config.duration_minutes ? `${script.config.duration_minutes} min` : null,
+            script.config.max_chars ? `${script.total_chars ?? 0}/${script.config.max_chars} caracteres` : null,
+            script.config.presenters.length === 2 ? `Apresentadores: ${script.config.presenters.join(' e ')}` : script.config.presenters[0] ? `Apresentador: ${script.config.presenters[0]}` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      )}
       {script.broll_status === 'failed' && <p className="error">{script.broll_error}</p>}
       <div className="script-columns-head" aria-hidden>
         <span>Roteiro</span>
@@ -143,6 +155,7 @@ export function ScriptView({ script, error, onChanged, onCutsChanged, onRetryScr
         <ParagraphRow
           key={p.id}
           paragraph={p}
+          speakerIndex={p.speaker ? (script.config?.presenters.indexOf(p.speaker) ?? 0) : undefined}
           brollStatus={script.broll_status}
           cuts={script.cuts.filter((c) => c.paragraph_id === p.id)}
           onAddCut={addCut}

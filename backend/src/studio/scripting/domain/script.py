@@ -4,6 +4,7 @@ from datetime import datetime
 from urllib.parse import parse_qs, urlparse
 from uuid import UUID, uuid4
 
+from studio.scripting.domain.config import ScriptConfig
 from studio.shared.domain.clock import utcnow
 from studio.shared.domain.errors import Conflict, InvalidInput, NotFound
 from studio.shared.domain.status import JobStatus
@@ -147,6 +148,7 @@ class Paragraph:
     position: int
     text: str
     broll: list[BrollSuggestion] = field(default_factory=list)
+    speaker: str | None = None  # apresentador que fala o parágrafo (roteiro com dois apresentadores)
 
 
 @dataclass
@@ -163,22 +165,27 @@ class Script:
     broll_error: str | None = None
     finished_at: datetime | None = None
     instructions: str | None = None
+    config: ScriptConfig | None = None  # perfil, tempo e apresentadores usados neste roteiro
     paragraphs: list[Paragraph] = field(default_factory=list)
     cuts: list[Cut] = field(default_factory=list)
 
     @classmethod
-    def start(cls, news_item_id: UUID, instructions: str | None = None) -> "Script":
+    def start(cls, news_item_id: UUID, instructions: str | None = None, config: ScriptConfig | None = None) -> "Script":
         return cls(
             id=uuid4(), news_item_id=news_item_id, status=JobStatus.RUNNING, created_at=utcnow(),
-            instructions=(instructions or "").strip() or None,
+            instructions=(instructions or "").strip() or None, config=config if config and not config.is_empty else None,
         )
 
-    def complete(self, title: str | None, texts: list[str]) -> None:
-        texts = [t.strip() for t in texts if t and t.strip()]
-        if not texts:
+    @property
+    def total_chars(self) -> int:
+        return sum(len(p.text) for p in self.paragraphs)
+
+    def complete(self, title: str | None, texts: list[str], speakers: list[str | None] | None = None) -> None:
+        pairs = [(t.strip(), speakers[i] if speakers and i < len(speakers) else None) for i, t in enumerate(texts) if t and t.strip()]
+        if not pairs:
             raise InvalidInput("O roteiro não tem parágrafos.")
         self.title = title
-        self.paragraphs = [Paragraph(id=uuid4(), position=i, text=t) for i, t in enumerate(texts)]
+        self.paragraphs = [Paragraph(id=uuid4(), position=i, text=t, speaker=s) for i, (t, s) in enumerate(pairs)]
         self.status = JobStatus.DONE
         self.error = None
         self.finished_at = utcnow()

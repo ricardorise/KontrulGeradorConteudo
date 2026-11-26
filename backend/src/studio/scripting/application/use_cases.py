@@ -2,14 +2,15 @@ import logging
 from typing import Protocol
 from uuid import UUID
 
-from studio.scripting.application.parsing import parse_broll, parse_script
+from studio.scripting.application.parsing import parse_broll, parse_script_lines
 from studio.scripting.application.ports import NewsSourceReader
-from studio.scripting.application.prompts import broll_prompt, script_prompt
-from studio.scripting.domain.repository import ScriptRepository
+from studio.scripting.application.prompts import broll_prompt, script_prompt, shorten_prompt
+from studio.scripting.domain.config import BUILTIN_PROFILES, DURATIONS, ScriptConfig, ScriptProfile, builtin_profile
+from studio.scripting.domain.repository import ScriptProfileRepository, ScriptRepository
 from studio.scripting.domain.script import Script
 from studio.shared.application.ports import AgentError, AgentGateway, BackgroundRunner, GuidelineSource
 from studio.shared.domain.bots import Bot
-from studio.shared.domain.errors import NotFound
+from studio.shared.domain.errors import Conflict, InvalidInput, NotFound
 from studio.shared.domain.guidance import GuidelineScope
 from studio.shared.domain.status import JobStatus
 
@@ -40,9 +41,21 @@ class ScriptWorkflow:
             return
         try:
             rules = await self.guidelines.texts_for(GuidelineScope.SCRIPT)
-            raw = await self.agents.ask(Bot.JULESVERNE, script_prompt(source, rules, script.instructions))
-            title, texts = parse_script(raw)
-            script.complete(title or source.title, texts)
+            prompt = script_prompt(source, rules, script.instructions, script.config)
+            raw = await self.agents.ask(Bot.JULESVERNE, prompt)
+            title, lines = parse_script_lines(raw, script.config)
+            config = script.config
+            total = sum(len(t) for _, t in lines)
+            if config and not config.fits(total):  # passou do tempo escolhido: o roteirista refaz uma vez, mais curto
+                raw = await self.agents.ask(Bot.JULESVERNE, shorten_prompt(prompt, total, config))
+                title, lines = parse_script_lines(raw, config)
+                total = sum(len(t) for _, t in lines)
+                if not config.fits(total):
+                    raise AgentError(
+                        f"O roteiro ficou com {total} caracteres, acima do limite de {config.max_chars} "
+                        f"({config.duration_minutes} min), mesmo após o ajuste. Gere de novo."
+                    )
+            script.complete(title or source.title, [t for _, t in lines], [s for s, _ in lines])
             script.begin_broll()
         except AgentError as exc:
             log.warning("roteiro %s falhou: %s", script_id, exc)
@@ -87,19 +100,70 @@ class ScriptWorkflow:
         await self.repo.save(script)
 
 
+class ScriptConfigOptions:
+    """Opções da "Configuração do roteiro": perfis (básicos + cadastrados) e tempos."""
+
+    def __init__(self, profiles: ScriptProfileRepository):
+        self._profiles = profiles
+
+    async def profiles(self) -> list[ScriptProfile]:
+        return [*BUILTIN_PROFILES, *await self._profiles.list_custom()]
+
+    async def resolve(self, profile_id: str | None) -> ScriptProfile | None:
+        if not profile_id:
+            return None
+        found = builtin_profile(profile_id) or await self._profiles.get(profile_id)
+        if found is None:
+            raise InvalidInput("Perfil de roteirista não encontrado.")
+        return found
+
+    async def build(
+        self, profile_id: str | None, duration_minutes: int | None, presenters: list[str] | None
+    ) -> ScriptConfig:
+        return ScriptConfig.build(await self.resolve(profile_id), duration_minutes, presenters)
+
+    durations = DURATIONS
+
+
+class AddScriptProfile:
+    def __init__(self, profiles: ScriptProfileRepository):
+        self._profiles = profiles
+
+    async def __call__(self, name: str, instructions: str, description: str = "") -> ScriptProfile:
+        profile = ScriptProfile.create(name, instructions, description)
+        if name.strip().lower() in {p.name.lower() for p in await self._profiles.list_custom()}:
+            raise Conflict("Já existe um perfil com esse nome.")
+        await self._profiles.add(profile)
+        return profile
+
+
+class DeleteScriptProfile:
+    def __init__(self, profiles: ScriptProfileRepository):
+        self._profiles = profiles
+
+    async def __call__(self, profile_id: str) -> None:
+        if builtin_profile(profile_id):
+            raise InvalidInput("Os perfis básicos não podem ser apagados.")
+        if not await self._profiles.delete(profile_id):
+            raise NotFound("Perfil não encontrado.")
+
+
 class StartScriptGeneration:
     def __init__(self, workflow: ScriptWorkflow):
         self._wf = workflow
 
-    async def __call__(self, news_item_id: UUID, force: bool = False, instructions: str | None = None) -> Script:
+    async def __call__(
+        self, news_item_id: UUID, force: bool = False, instructions: str | None = None, config: ScriptConfig | None = None
+    ) -> Script:
         if await self._wf.news.get(news_item_id) is None:
             raise NotFound("Notícia não encontrada.")
-        force = force or bool(instructions and instructions.strip())  # pedido específico => novo roteiro
+        has_config = bool(config and not config.is_empty)
+        force = force or has_config or bool(instructions and instructions.strip())  # pedido específico => novo roteiro
         if not force:
             existing = await self._wf.repo.get_latest_for_news_item(news_item_id)
             if existing and existing.status is not JobStatus.FAILED:
                 return existing
-        script = Script.start(news_item_id, instructions)
+        script = Script.start(news_item_id, instructions, config)
         await self._wf.repo.add(script)
         self._wf.runner.submit(self._wf.write_script(script.id))
         return script

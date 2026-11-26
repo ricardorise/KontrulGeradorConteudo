@@ -15,7 +15,7 @@ STUDIO_DATABASE_URL=postgresql://usuario:senha@host:5432/banco .venv/bin/python 
 ```
 É idempotente (rodar de novo diz "Banco já está atualizado") e usa um *advisory lock*, então réplicas simultâneas não se atropelam. O usuário do banco precisa poder criar schema e tabelas.
 
-Verificado: aplicar todas as migrações num banco vazio gera as 14 tabelas abaixo, idênticas às de produção.
+Verificado: aplicar todas as migrações num banco vazio gera as 15 tabelas abaixo, idênticas às de produção.
 
 > Nota: há migrações com o mesmo prefixo numérico (`003_*`, `004_*`, `005_*`) porque foram criadas em paralelo. Elas são independentes e a ordem alfabética as aplica corretamente; use nomes únicos nas próximas.
 
@@ -38,6 +38,7 @@ Verificado: aplicar todas as migrações num banco vazio gera as 14 tabelas abai
 | `011_music_stage_volumes` | Nível do áudio de fundo por etapa |
 | `012_broll_source` | Origem de cada sugestão de B-roll (`lumiere` ou `manual`) |
 | `013_publications` | Rascunhos e publicações no YouTube |
+| `014_script_config` | Perfis de roteirista, configuração usada em cada roteiro e apresentador por parágrafo |
 
 ## Tabelas (`content_studio`)
 
@@ -60,8 +61,9 @@ erDiagram
 |---|---|
 | `news_searches` | Tema, estado, erro, instruções, `report_context` (contrato do Radar) |
 | `news_items` | Título, resumo, `details` (fatos), fonte, data, `radar` (análise) |
-| `scripts` | Título, estado do roteiro e do B-roll, erros, instruções |
-| `script_paragraphs` | Texto e posição de cada parágrafo |
+| `scripts` | Título, estado do roteiro e do B-roll, erros, instruções, `config` (perfil/tempo/apresentadores usados) |
+| `script_paragraphs` | Texto, posição e `speaker` (apresentador) de cada parágrafo |
+| `script_profiles` | Perfis de roteirista cadastrados pelo editor |
 | `broll_suggestions` | Cenas: URL, `video_id`, início, descrição, justificativa e `source` (`lumiere` = automática, `manual` = escolhida pelo editor) |
 | `script_cuts` | Cortes do editor: vídeo, início/fim (s), título, `excerpt_id` |
 | `paragraph_excerpts` | Trecho (offsets e texto) do parágrafo ligado a um corte; único por corte |

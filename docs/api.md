@@ -18,6 +18,9 @@ Base: `/api`. Documentação interativa gerada pelo FastAPI em `/docs` (Swagger)
 | Método e rota | Descrição |
 |---|---|
 | `POST /news-items/{id}/script[?force=true]` | Gera o roteiro (idempotente). Corpo opcional `{instructions}` gera um novo |
+| `GET /script-options` | Perfis (básicos + cadastrados) e tempos (`minutes`, `max_chars`) |
+| `POST /script-profiles` | Cadastra perfil: `{name, instructions, description?}` (`409` se o nome já existe) |
+| `DELETE /script-profiles/{id}` | Apaga perfil cadastrado (os básicos não podem) |
 | `GET /news-items/{id}/script` | Roteiro mais recente da notícia (ou `null`); não cria nada |
 | `GET /scripts/{id}` | Roteiro: `status, broll_status, paragraphs[{text, broll[{video_url, source: lumiere|manual, …}]}], cuts[]` |
 | `POST /scripts/{id}/broll` | Rebusca o B-roll. Corpo opcional `{instructions?, paragraph_ids?[]}`; sem `paragraph_ids` refaz todos, com eles só esses. Não apaga o que já existe nem os vídeos escolhidos pelo editor |

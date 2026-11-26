@@ -1,5 +1,5 @@
 import { apiUrl } from './base'
-import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Narration, Publication, PublicationEdit, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
+import type { ChatBot, Conversation, Guideline, GuidelineScope, NewsSearch, RadarSearchOptions, Narration, Publication, ScriptConfigInput, ScriptOptions, ScriptProfile, PublicationEdit, Render, RenderAsset, RenderPreview, Script, VignetteKind, ScreenContext } from './types'
 
 export class ApiError extends Error {}
 
@@ -40,8 +40,15 @@ export const api = {
   getNewsSearch: (id: string) => request<NewsSearch>(`/news-searches/${id}`),
   listNewsSearches: () => request<NewsSearch[]>('/news-searches?limit=15'),
 
-  generateScript: (newsItemId: string, force = false) =>
-    post<Script>(`/news-items/${newsItemId}/script${force ? '?force=true' : ''}`),
+  generateScript: (newsItemId: string, force = false, config?: ScriptConfigInput) =>
+    post<Script>(`/news-items/${newsItemId}/script${force ? '?force=true' : ''}`, config ? { config } : undefined),
+  scriptOptions: () => request<ScriptOptions>('/script-options'),
+  addScriptProfile: (name: string, instructions: string, description = '') =>
+    post<ScriptProfile>('/script-profiles', { name, instructions, description }),
+  deleteScriptProfile: async (id: string) => {
+    const response = await fetch(apiUrl(`/script-profiles/${id}`), { method: 'DELETE' })
+    if (!response.ok) throw new ApiError((await response.json().catch(() => ({}))).detail ?? `Erro ${response.status}`)
+  },
   getLatestScript: (newsItemId: string) => request<Script | null>(`/news-items/${newsItemId}/script`),
   getScript: (id: string) => request<Script>(`/scripts/${id}`),
   retryBroll: (id: string, paragraphIds?: string[]) =>

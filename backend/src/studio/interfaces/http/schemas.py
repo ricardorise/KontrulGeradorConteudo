@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from studio.conversation.domain.conversation import ActionOutcome, Conversation, Message
 from studio.guidance.domain.guideline import Guideline
 from studio.discovery.domain.news_search import NewsItem, NewsSearch
+from studio.scripting.domain.config import ScriptProfile
 from studio.scripting.domain.script import BrollSuggestion, Cut, Paragraph, Script
 from studio.publishing.domain.publication import DESCRIPTION_MAX, PRIVACIES, TITLE_MAX, Publication
 from studio.rendering.application.ports import NarrationSettings
@@ -119,11 +120,20 @@ class ParagraphOut(BaseModel):
     id: UUID
     position: int
     text: str
+    speaker: str | None = None
     broll: list[BrollOut]
 
     @classmethod
     def of(cls, p: Paragraph) -> "ParagraphOut":
-        return cls(id=p.id, position=p.position, text=p.text, broll=[BrollOut.of(b) for b in p.broll])
+        return cls(id=p.id, position=p.position, text=p.text, speaker=p.speaker, broll=[BrollOut.of(b) for b in p.broll])
+
+
+class ScriptConfigOut(BaseModel):
+    profile_id: str | None
+    profile_name: str | None
+    duration_minutes: int | None
+    max_chars: int | None
+    presenters: list[str]
 
 
 class ScriptOut(BaseModel):
@@ -135,6 +145,8 @@ class ScriptOut(BaseModel):
     broll_status: str
     broll_error: str | None
     instructions: str | None
+    config: ScriptConfigOut | None = None
+    total_chars: int = 0
     created_at: datetime
     paragraphs: list[ParagraphOut]
     cuts: list[CutOut]
@@ -143,13 +155,54 @@ class ScriptOut(BaseModel):
     def of(cls, s: Script) -> "ScriptOut":
         return cls(
             id=s.id, news_item_id=s.news_item_id, title=s.title, status=s.status.value, error=s.error,
-            broll_status=s.broll_status.value, broll_error=s.broll_error, instructions=s.instructions, created_at=s.created_at,
+            broll_status=s.broll_status.value, broll_error=s.broll_error, instructions=s.instructions, created_at=s.created_at, total_chars=s.total_chars,
+            config=ScriptConfigOut(
+                profile_id=s.config.profile_id, profile_name=s.config.profile_name, duration_minutes=s.config.duration_minutes,
+                max_chars=s.config.max_chars, presenters=list(s.config.presenters),
+            ) if s.config else None,
             paragraphs=[ParagraphOut.of(p) for p in s.paragraphs], cuts=[CutOut.of(c) for c in s.cuts],
         )  # fmt: skip
 
 
+class ScriptConfigIn(BaseModel):
+    """Configuração do roteiro, escolhida antes de gerar."""
+
+    profile_id: str | None = Field(default=None, max_length=60)  # perfil básico (slug) ou cadastrado (uuid)
+    duration_minutes: int | None = None  # 5, 8, 12 ou 20 (limite de caracteres correspondente)
+    presenters: list[str] = Field(default_factory=list, max_length=2)  # 1 nome (opcional) = um apresentador; 2 = diálogo
+
+
 class ScriptIn(BaseModel):
     instructions: str | None = Field(default=None, max_length=1000)
+    config: ScriptConfigIn | None = None
+
+
+class ScriptProfileOut(BaseModel):
+    id: str
+    name: str
+    description: str
+    instructions: str
+    builtin: bool
+
+    @classmethod
+    def of(cls, p: "ScriptProfile") -> "ScriptProfileOut":
+        return cls(id=p.id, name=p.name, description=p.description, instructions=p.instructions, builtin=p.builtin)
+
+
+class ScriptProfileIn(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    instructions: str = Field(min_length=10, max_length=1500)
+    description: str = Field(default="", max_length=200)
+
+
+class DurationOut(BaseModel):
+    minutes: int
+    max_chars: int
+
+
+class ScriptOptionsOut(BaseModel):
+    profiles: list[ScriptProfileOut]
+    durations: list[DurationOut]
 
 
 class BrollRetryIn(BaseModel):

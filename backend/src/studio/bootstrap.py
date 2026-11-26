@@ -35,6 +35,7 @@ from studio.infrastructure.persistence.render_asset_repository import PostgresRe
 from studio.infrastructure.persistence.render_repository import PostgresRenderJobRepository
 from studio.infrastructure.persistence.render_script_source import ScriptingScriptSourceReader
 from studio.infrastructure.persistence.script_repository import PostgresScriptRepository
+from studio.infrastructure.persistence.script_profile_repository import PostgresScriptProfileRepository
 from studio.infrastructure.studio_gateway import StudioUseCaseGateway
 from studio.infrastructure.youtube.oembed import YoutubeOEmbed
 from studio.infrastructure.publishing.hermes_publisher import HermesYoutubePublisher
@@ -78,6 +79,9 @@ from studio.scripting.application.use_cases import (
     RetryBroll,
     ScriptWorkflow,
     StartScriptGeneration,
+    ScriptConfigOptions,
+    AddScriptProfile,
+    DeleteScriptProfile,
 )
 
 log = logging.getLogger(__name__)
@@ -125,6 +129,7 @@ def create_app() -> FastAPI:
         start_news_search = StartNewsSearch(news_repo, agents, runner, guideline_texts)
         get_news_search, get_script = GetNewsSearch(news_repo), GetScript(script_repo)
         start_script, retry_broll = StartScriptGeneration(workflow), RetryBroll(workflow)
+        profile_repo = PostgresScriptProfileRepository(pool)
         publication_repo = PostgresPublicationRepository(pool)
         open_render_video = OpenRenderVideo(render_repo, renderer, media_store)
         publisher_agents = HermesCliGateway(
@@ -150,6 +155,9 @@ def create_app() -> FastAPI:
             get_news_search=get_news_search,
             list_news_searches=ListNewsSearches(news_repo),
             start_script=start_script,
+            script_options=ScriptConfigOptions(profile_repo),
+            add_script_profile=AddScriptProfile(profile_repo),
+            delete_script_profile=DeleteScriptProfile(profile_repo),
             get_script=get_script,
             get_latest_script=GetLatestScript(script_repo),
             retry_broll=retry_broll,

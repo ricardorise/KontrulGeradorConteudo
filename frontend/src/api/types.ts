@@ -77,6 +77,7 @@ export interface Paragraph {
   id: string
   position: number
   text: string
+  speaker?: string | null // apresentador (roteiro com dois apresentadores)
   broll: Broll[]
 }
 
@@ -93,6 +94,34 @@ export interface Cut {
   excerpt: { id: string; start: number; end: number; text: string } | null
 }
 
+export interface ScriptConfigUsed {
+  profile_id: string | null
+  profile_name: string | null
+  duration_minutes: number | null
+  max_chars: number | null
+  presenters: string[]
+}
+
+export interface ScriptProfile {
+  id: string
+  name: string
+  description: string
+  instructions: string
+  builtin: boolean
+}
+
+export interface ScriptOptions {
+  profiles: ScriptProfile[]
+  durations: { minutes: number; max_chars: number }[]
+}
+
+/** Configuração do roteiro enviada ao gerar. */
+export interface ScriptConfigInput {
+  profile_id: string | null
+  duration_minutes: number | null
+  presenters: string[]
+}
+
 export interface Script {
   id: string
   news_item_id: string
@@ -102,6 +131,8 @@ export interface Script {
   broll_status: JobStatus
   broll_error: string | null
   instructions: string | null
+  config?: ScriptConfigUsed | null
+  total_chars?: number
   created_at: string
   paragraphs: Paragraph[]
   cuts: Cut[]

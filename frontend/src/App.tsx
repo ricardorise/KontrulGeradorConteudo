@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { api } from './api/client'
-import type { ChatAction, NewsSearch, RadarSearchOptions, Script } from './api/types'
+import type { ChatAction, NewsSearch, RadarSearchOptions, Script, ScriptConfigInput } from './api/types'
 import { ChatPanel } from './features/chat/ChatPanel'
 import { GuidelinesPanel } from './features/guidance/GuidelinesPanel'
 import { NewsList } from './features/news/NewsList'
 import { SearchBar } from './features/news/SearchBar'
 import { SearchHistory } from './features/news/SearchHistory'
 import { PublicationView } from './features/publication/PublicationView'
+import { ScriptConfigPanel } from './features/script/ScriptConfigPanel'
 import { ScriptView } from './features/script/ScriptView'
 import { usePolling } from './hooks/usePolling'
 
@@ -23,6 +24,8 @@ export function App() {
   const [guidelinesVersion, setGuidelinesVersion] = useState(0)
   const [publicationId, setPublicationId] = useState<string | null>(null)
   const [publicationVersion, setPublicationVersion] = useState(0)
+  const [configItemId, setConfigItemId] = useState<string | null>(null) // notícia cuja "Configuração do roteiro" está aberta
+  const [generating, setGenerating] = useState(false)
 
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -37,6 +40,7 @@ export function App() {
     if (!newest || newest.id === scriptId) return
     if (script.data && newest.created_at <= script.data.created_at) return
     setScriptId(newest.id)
+    setConfigItemId(null)
     setNotice('Roteiro atualizado: abrindo a versão mais recente.')
   }, [latest.data, scriptId, script.data])
   useEffect(() => {
@@ -51,6 +55,7 @@ export function App() {
       const created = await api.startNewsSearch(topic, options)
       setItemId(null)
       setScriptId(null)
+      setConfigItemId(null)
       setPublicationId(null)
       setSearchId(created.id)
     } catch (e) {
@@ -61,20 +66,44 @@ export function App() {
   const openSearch = (id: string) => {
     setItemId(null)
     setScriptId(null)
+    setConfigItemId(null)
     setPublicationId(null)
     setSearchId(id)
   }
 
-  const generateScript = async (newsItemId: string, force = false) => {
+  const generateScript = async (newsItemId: string, config: ScriptConfigInput) => {
+    setActionError(null)
+    setItemId(newsItemId)
+    setPublicationId(null)
+    setGenerating(true)
+    try {
+      const created = await api.generateScript(newsItemId, true, config)
+      setScriptId(created.id)
+      setConfigItemId(null)
+      script.refresh()
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Falha ao gerar o roteiro')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  // Clicar numa notícia reabre o roteiro que ela já tem; sem roteiro, abre a configuração antes de gerar.
+  const openNews = async (newsItemId: string) => {
     setActionError(null)
     setItemId(newsItemId)
     setPublicationId(null)
     try {
-      const created = await api.generateScript(newsItemId, force)
-      setScriptId(created.id)
-      script.refresh()
+      const existing = await api.getLatestScript(newsItemId)
+      if (existing) {
+        setScriptId(existing.id)
+        setConfigItemId(null)
+      } else {
+        setScriptId(null)
+        setConfigItemId(newsItemId)
+      }
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Falha ao gerar o roteiro')
+      setActionError(e instanceof Error ? e.message : 'Falha ao abrir a notícia')
     }
   }
 
@@ -89,11 +118,13 @@ export function App() {
         }
       } else if (a.type === 'search_news') {
         setPublicationId(null)
+        setConfigItemId(null)
         setItemId(null)
         setScriptId(null)
         setSearchId(search_id)
       } else if (a.type === 'generate_script') {
         setPublicationId(null)
+        setConfigItemId(null)
         if (search_id && search_id !== searchId) setSearchId(search_id)
         setItemId(news_item_id)
         setScriptId(script_id)
@@ -131,12 +162,19 @@ export function App() {
             refreshKey={search.data ? `${search.data.id}:${search.data.status}` : null}
             onOpen={openSearch}
           />
-          <NewsList search={search.data} error={search.error} selectedItemId={itemId} onSelect={(id) => void generateScript(id)} />
+          <NewsList search={search.data} error={search.error} selectedItemId={itemId} onSelect={(id) => void openNews(id)} />
         </section>
 
         <section className="column script-column" aria-label="Roteiro">
           {publicationId ? (
             <PublicationView publicationId={publicationId} refreshKey={publicationVersion} onClose={() => setPublicationId(null)} />
+          ) : configItemId ? (
+            <ScriptConfigPanel
+              newsTitle={selectedItem?.title}
+              busy={generating}
+              onGenerate={(config) => void generateScript(configItemId, config)}
+              onCancel={scriptId ? () => setConfigItemId(null) : undefined}
+            />
           ) : (
             <>
           {selectedItem && <p className="source">Notícia: {selectedItem.title}</p>}
@@ -149,7 +187,7 @@ export function App() {
               script.refresh()
             }}
             onCutsChanged={(s) => script.setData(s)}
-            onRetryScript={() => itemId && void generateScript(itemId, true)}
+            onRetryScript={() => itemId && setConfigItemId(itemId)}
             onPublication={setPublicationId}
           />
             </>

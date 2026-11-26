@@ -1,3 +1,4 @@
+from studio.scripting.domain.config import ScriptConfig
 from studio.scripting.domain.script import BrollSuggestion
 from studio.shared.application.json_extract import extract_json_object
 from studio.shared.application.ports import AgentOutputError
@@ -11,14 +12,34 @@ def _text(value: object) -> str | None:
 
 
 def parse_script(raw: str) -> tuple[str | None, list[str]]:
+    title, lines = parse_script_lines(raw)
+    return title, [text for _, text in lines]
+
+
+def parse_script_lines(raw: str, config: ScriptConfig | None = None) -> tuple[str | None, list[tuple[str | None, str]]]:
+    """Parágrafos como (apresentador, texto). Com dois apresentadores, cada item é {"speaker","text"}; um apresentador
+    que o roteirista não identificou assume a alternância entre os dois."""
     payload = extract_json_object(raw, "paragraphs")
     paragraphs = payload["paragraphs"]
     if not isinstance(paragraphs, list):
         raise AgentOutputError("O campo 'paragraphs' não é uma lista.")
-    texts = [str(p).strip() for p in paragraphs if isinstance(p, str | int | float) and str(p).strip()]
-    if not texts:
+    lines: list[tuple[str | None, str]] = []
+    for entry in paragraphs:
+        speaker_raw = None
+        if isinstance(entry, dict):
+            speaker_raw, entry = entry.get("speaker") or entry.get("apresentador"), entry.get("text") or entry.get("texto")
+        if not isinstance(entry, str | int | float) or not str(entry).strip():
+            continue
+        speaker = None
+        if config and config.is_dialogue:
+            speaker = config.resolve_speaker(speaker_raw)
+            if speaker is None:  # sem identificação válida: alterna entre os dois
+                last = lines[-1][0] if lines else None
+                speaker = config.presenters[1] if last == config.presenters[0] else config.presenters[0]
+        lines.append((speaker, str(entry).strip()))
+    if not lines:
         raise AgentOutputError("O Jules Verne não retornou parágrafos.")
-    return _text(payload.get("title")), texts
+    return _text(payload.get("title")), lines
 
 
 def parse_broll(raw: str, paragraph_count: int, allowed: set[int] | None = None) -> dict[int, list[BrollSuggestion]]:

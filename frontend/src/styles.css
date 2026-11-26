@@ -285,3 +285,19 @@ button.small { padding: 3px 8px; font-size: 12px; }
 .narration-controls { display: flex; gap: 10px; align-items: center; }
 .narration-controls input[type=range] { flex: 1; }
 .narration-controls input[type=number] { width: 80px; }
+
+/* Configuração do roteiro */
+.script-config { display: flex; flex-direction: column; gap: 6px; }
+.cfg-group { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 6px 0; }
+.cfg-group legend { padding: 0 6px; font-weight: 650; }
+.cfg-options { display: grid; gap: 6px; }
+.cfg-times { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.cfg-option { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.cfg-option.selected { border-color: var(--accent, #6ea8fe); background: rgba(110, 168, 254, .08); }
+.cfg-option > span { display: flex; flex-direction: column; flex: 1; gap: 2px; }
+.cfg-option button { padding: 0 6px; font-size: 12px; }
+.cfg-detail { margin: 6px 0; }
+.cfg-new, .cfg-names { display: flex; flex-direction: column; gap: 2px; }
+.speaker-tag { font-size: 12px; font-weight: 700; margin-right: 6px; padding: 1px 6px; border-radius: 6px; background: rgba(110, 168, 254, .15); }
+.speaker-tag.second { background: rgba(255, 183, 77, .18); }
+.script-meta { font-size: 12px; }

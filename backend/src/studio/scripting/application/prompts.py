@@ -1,23 +1,64 @@
 from studio.scripting.application.ports import NewsSource
+from studio.scripting.domain.config import ScriptConfig
 from studio.shared.application.guidance_text import render_guidance
 
 
-def script_prompt(news: NewsSource, guidelines: list[str] | None = None, instructions: str | None = None) -> str:
+def _config_block(config: ScriptConfig | None) -> str:
+    if config is None or config.is_empty:
+        return ""
+    parts = []
+    if config.profile_name:
+        parts.append(f"PERFIL DO ROTEIRISTA — {config.profile_name}:\n{config.profile_instructions}")
+    if config.max_chars:
+        parts.append(
+            f"TEMPO DO VÍDEO — {config.duration_minutes} minutos: a soma de TODOS os parágrafos (só o texto falado"
+            f"{', sem os nomes' if config.is_dialogue else ''}) deve ter NO MÁXIMO {config.max_chars} caracteres, "
+            f"contando espaços. Mire entre {int(config.max_chars * 0.85)} e {config.max_chars}; nunca passe do limite. "
+            "Ajuste a quantidade de parágrafos a esse tamanho (parágrafos curtos)."
+        )
+    if config.is_dialogue:
+        a, b = config.presenters
+        parts.append(
+            f"APRESENTADORES — dois: {a} e {b}. Escreva como conversa natural entre eles (um puxa o assunto, o outro "
+            f"complementa, comenta e pergunta), com a fala de cada um em parágrafos separados, alternando quando fizer sentido. "
+            f'Cada parágrafo é um objeto {{"speaker":"{a}" ou "{b}","text":"fala"}}. Não escreva o nome dentro do texto.'
+        )
+    elif config.presenters:
+        parts.append(f"APRESENTADOR — um só: {config.presenters[0]}. Escreva em primeira pessoa para ele ler sozinho.")
+    return "\n\nCONFIGURAÇÃO DO ROTEIRO (definida pelo editor, siga à risca):\n" + "\n\n".join(parts)
+
+
+def script_prompt(
+    news: NewsSource, guidelines: list[str] | None = None, instructions: str | None = None, config: ScriptConfig | None = None
+) -> str:
     material = [f"Tema pesquisado: {news.topic}", f"Título: {news.title}", f"Resumo: {news.summary}"]
     if news.details:
         material.append(f"Fatos levantados: {news.details}")
     if news.source_url:
         material.append(f"Fonte: {news.source_url}")
+    paragraph_rule = "Entre 6 e 10 parágrafos curtos" if not (config and config.max_chars) else "Parágrafos curtos"
+    if config and config.is_dialogue:
+        a, b = config.presenters
+        example = f'{{"title":"título do vídeo","paragraphs":[{{"speaker":"{a}","text":"fala 1"}},{{"speaker":"{b}","text":"fala 2"}}]}}'
+    else:
+        example = '{"title":"título do vídeo","paragraphs":["parágrafo 1","parágrafo 2"]}'
     return f"""Escreva o roteiro de narração de um vídeo curto do PapoTech Cast sobre a notícia abaixo, usando APENAS o material recebido (não invente dados, números ou citações).
 
 --- MATERIAL ---
 {chr(10).join(material)}
 --- FIM DO MATERIAL ---
 
-Estrutura padrão: gancho de abertura, desenvolvimento e fechamento. Entre 6 e 10 parágrafos curtos, escritos para serem falados, em português do Brasil (as orientações do editor abaixo podem mudar tom, tamanho ou ângulo).{render_guidance(guidelines or [], instructions)}
+Estrutura padrão: gancho de abertura, desenvolvimento e fechamento. {paragraph_rule}, escritos para serem falados, em português do Brasil (as orientações do editor abaixo podem mudar tom, tamanho ou ângulo).{_config_block(config)}{render_guidance(guidelines or [], instructions)}
 
 Responda SOMENTE com JSON válido (sem markdown, sem texto antes ou depois):
-{{"title":"título do vídeo","paragraphs":["parágrafo 1","parágrafo 2"]}}"""
+{example}"""
+
+
+def shorten_prompt(original: str, total_chars: int, config: ScriptConfig) -> str:
+    return (
+        f"{original}\n\nATENÇÃO: sua versão anterior ficou com {total_chars} caracteres e o limite é {config.max_chars}. "
+        f"Reescreva MAIS CURTA, com no máximo {config.max_chars} caracteres no total, mantendo o formato JSON."
+    )
 
 
 def broll_prompt(

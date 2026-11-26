@@ -1,7 +1,9 @@
+import json
 from uuid import UUID
 
 import asyncpg
 
+from studio.scripting.domain.config import ScriptConfig
 from studio.scripting.domain.script import BrollSuggestion, Cut, Excerpt, Paragraph, Script
 from studio.shared.domain.status import JobStatus
 
@@ -15,9 +17,10 @@ class PostgresScriptRepository:
     async def add(self, script: Script) -> None:
         await self._pool.execute(
             f"INSERT INTO {T}.scripts (id, news_item_id, title, status, error, broll_status, broll_error, "
-            "created_at, finished_at, instructions) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+            "created_at, finished_at, instructions, config) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb)",
             script.id, script.news_item_id, script.title, script.status.value, script.error,
             script.broll_status.value, script.broll_error, script.created_at, script.finished_at, script.instructions,
+            json.dumps(script.config.to_json()) if script.config else None,
         )  # fmt: skip
 
     async def save(self, script: Script) -> None:
@@ -31,9 +34,9 @@ class PostgresScriptRepository:
             if not script.paragraphs:
                 return
             await conn.executemany(
-                f"INSERT INTO {T}.script_paragraphs (id, script_id, position, text) VALUES ($1,$2,$3,$4) "
-                "ON CONFLICT (id) DO UPDATE SET position=EXCLUDED.position, text=EXCLUDED.text",
-                [(p.id, script.id, p.position, p.text) for p in script.paragraphs],
+                f"INSERT INTO {T}.script_paragraphs (id, script_id, position, text, speaker) VALUES ($1,$2,$3,$4,$5) "
+                "ON CONFLICT (id) DO UPDATE SET position=EXCLUDED.position, text=EXCLUDED.text, speaker=EXCLUDED.speaker",
+                [(p.id, script.id, p.position, p.text, p.speaker) for p in script.paragraphs],
             )
             await conn.execute(
                 f"DELETE FROM {T}.broll_suggestions WHERE paragraph_id = ANY($1::uuid[])",
@@ -154,8 +157,9 @@ class PostgresScriptRepository:
             created_at=row["created_at"], broll_status=JobStatus(row["broll_status"]), title=row["title"],
             error=row["error"], broll_error=row["broll_error"], finished_at=row["finished_at"],
             instructions=row["instructions"],
+            config=ScriptConfig.from_json(json.loads(row["config"]) if row["config"] else None),
             paragraphs=[
-                Paragraph(id=p["id"], position=p["position"], text=p["text"], broll=by_paragraph.get(p["id"], []))
+                Paragraph(id=p["id"], position=p["position"], text=p["text"], broll=by_paragraph.get(p["id"], []), speaker=p["speaker"])
                 for p in paragraph_rows
             ],
             cuts=[

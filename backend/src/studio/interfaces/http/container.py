@@ -31,12 +31,15 @@ from studio.rendering.application.use_cases import (
 from studio.scripting.application.use_cases import (
     AddBroll,
     AddCut,
+    AddScriptProfile,
     DeleteCut,
+    DeleteScriptProfile,
     GetLatestScript,
     GetScript,
     RemoveBroll,
     ReplaceBroll,
     RetryBroll,
+    ScriptConfigOptions,
     SetCutExcerpt,
     StartScriptGeneration,
 )
@@ -48,6 +51,9 @@ class UseCases:
     get_news_search: GetNewsSearch
     list_news_searches: ListNewsSearches
     start_script: StartScriptGeneration
+    script_options: ScriptConfigOptions
+    add_script_profile: AddScriptProfile
+    delete_script_profile: DeleteScriptProfile
     get_script: GetScript
     get_latest_script: GetLatestScript
     retry_broll: RetryBroll

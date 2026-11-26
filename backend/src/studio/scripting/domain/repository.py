@@ -1,6 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
+from studio.scripting.domain.config import ScriptProfile
 from studio.scripting.domain.script import BrollSuggestion, Cut, Script
 
 
@@ -26,3 +27,15 @@ class ScriptRepository(Protocol):
     async def set_cut_excerpt(self, cut: Cut) -> None: ...
 
     async def fail_interrupted(self) -> int: ...
+
+
+class ScriptProfileRepository(Protocol):
+    """Perfis de roteirista cadastrados pelo editor (os básicos são constantes do domínio)."""
+
+    async def list_custom(self) -> list[ScriptProfile]: ...
+
+    async def get(self, profile_id: str) -> ScriptProfile | None: ...
+
+    async def add(self, profile: ScriptProfile) -> None: ...
+
+    async def delete(self, profile_id: str) -> bool: ...
